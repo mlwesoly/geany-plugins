@@ -1,3 +1,4 @@
+
 #ifdef HAVE_CONFIG_H
 	#include "config.h" /* for the gettext domain */
 #endif
@@ -12,6 +13,7 @@
 #include <string.h>
 #include <glib/gstdio.h>
 #include <errno.h>
+/*
 
 GeanyPlugin		*geany_plugin2;
 //GeanyData *geany_data;
@@ -22,14 +24,13 @@ enum
 	COUNT_KB
 };
 
-/* Needed global to remove from toolbar again */
 GtkWidget *mailbutton = NULL;
 GtkWidget *button2 = NULL;
 GtkWidget *newreportbutton = NULL;
 
 #define GEANYSENDMAIL_STOCK_MAIL "geanysendmail-mail"
 #define GEANYSENDBUTTON2 "geanybutton2"
-/*
+
 static void add_stock_item(void)
 {
 	GtkIconSet *icon_set;
@@ -242,6 +243,8 @@ void addingtwo(void)
 {
 	int i;
 	i=2+2;
+	printf("2+2");
+	fflush(stdout);
 	ui_set_statusbar(TRUE, ("Too many items selected!"));
 
 }
