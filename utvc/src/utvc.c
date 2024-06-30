@@ -1307,7 +1307,7 @@ static void fill_combo_entry (GtkWidget *combo)
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EP");
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EA");
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EMP");
-  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "industry");
+  //gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "industry");
 }
 
 static void copynewreport(void)
