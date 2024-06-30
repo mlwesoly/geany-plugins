@@ -87,3 +87,6 @@ cscope.files
 *.lot
 *.out
 *.toc
+config.guess~
+config.sub~
+install-sh~
