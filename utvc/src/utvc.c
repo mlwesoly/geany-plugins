@@ -64,6 +64,7 @@ enum
 {
 	KB_FOCUS_FILE_LIST,
 	KB_FOCUS_PATH_ENTRY,
+	OPENTER_KB,
 	KB_COUNT
 };
 
@@ -105,6 +106,7 @@ static gchar *coupling_folder = NULL;
 static gchar *coupling_prefix = NULL;
 static gchar *transfer_folder = NULL;
 static gchar *reporttype = NULL;
+static gchar *templatetype = NULL;
 
 static gint page_number = 0;
 static gint page_number2 = 0;
@@ -1262,34 +1264,21 @@ static void prepare_file_view(void)
 	g_signal_connect(file_view, "key-press-event", G_CALLBACK(on_key_press), NULL);
 }
 
-static GtkWidget *make_newtvcbar(void)
-{
-	/*
-		fill with standardfiles for (EMP/ EP / EC  Industrie )
-		fill with only the stadard script
-		connect to upadt_script and optimiziing script
-		makereport.sh copy
-		copy pre odt report (EMP/EP/..) different version combobox
-		make final odt report
 
-	 
-	*/
-}
-
-#define GEANYSENDMAIL_STOCK_MAIL "newreportodt"
+#define GEANYTEST_STOCK "newreportodt"
 
 static void add_stock_item(void)
 {
 	GtkIconSet *icon_set;
 	GtkIconFactory *factory = gtk_icon_factory_new();
 	GtkIconTheme *theme = gtk_icon_theme_get_default();
-	GtkStockItem item = { (gchar*)(GEANYSENDMAIL_STOCK_MAIL), (gchar*)(N_("Mail")), 0, 0, (gchar*)(GETTEXT_PACKAGE) };
+	GtkStockItem item = { (gchar*)(GEANYTEST_STOCK), (gchar*)(N_("Newreport")), 0, 0, (gchar*)(GETTEXT_PACKAGE) };
 
 	if (gtk_icon_theme_has_icon(theme, "document-new"))
 	{
 		GtkIconSource *icon_source = gtk_icon_source_new();
 		icon_set = gtk_icon_set_new();
-		gtk_icon_source_set_icon_name(icon_source, "document-new");
+		gtk_icon_source_set_icon_name(icon_source, "view-refresh");
 		gtk_icon_set_add_source(icon_set, icon_source);
 		gtk_icon_source_free(icon_source);
 	}
@@ -1408,6 +1397,44 @@ static void makereport_copy(void)
 	refresh();
 }
 
+static void update_current_shell(void)
+{
+	gchar *locale_path;
+	gchar *locale_filename;
+	gchar *file_basename;
+	GeanyDocument *doc = document_get_current();
+	if (doc != NULL)
+	{
+		locale_path = g_path_get_dirname(doc->file_name);
+		locale_filename = doc->file_name;
+		file_basename = g_path_get_basename(doc->file_name);
+		
+	}
+	char* command = "/bin/bash";
+    char* argument_list[] = {"/bin/bash", "/home/tvc/tools/shell/update_tvc_script", file_basename, locale_filename, NULL}; //"/bin/bash", 
+	
+	//char* command = "/mnt/hgfs/Scripts/BASH_LINUX_TVC/update_script.sh";
+    //char* argument_list[] = {"/mnt/hgfs/Scripts/BASH_LINUX_TVC/update_script.sh ", locale_filename, NULL};
+	
+	int pid = fork();
+    if (pid == 0) {
+        // Newly spawned child Process.
+        int status_code = execv(command, argument_list);
+		
+        if (status_code == -1) {
+            printf("Terminated Incorrectly\n");
+            return;
+        }
+    }
+    else {
+        // Old Parent process. The C program will come here
+        printf("This line will be printed\n");
+    }
+	waitpid(pid, NULL, 0);
+	
+	refresh();
+}
+
 static void set_report_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user_data)
 {
 	gint index;
@@ -1445,6 +1472,111 @@ static void set_report_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user
 	fflush(stdout);
 }
 
+static void set_template_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user_data)
+{
+	gint index;
+	// get the value from 
+	/*
+	get_active_iter();
+	get_entry_text_column();
+	printf("%s",combobox.get_active_iter());
+	*/
+	index = gtk_combo_box_get_active(combobox);
+	//printf("%d",gtk_combo_box_get_active(combobox));
+	switch ( index )
+	{
+		// declarations
+		// . . .
+		case 0:
+			templatetype = "EP";
+			break;
+		case 1:
+			templatetype = "EA";
+			break;
+		case 2:
+			templatetype = "EMP";
+			break;
+		case 3:
+			templatetype = "industry";
+			break;
+		default:
+			printf("default\n");
+	}
+	fflush(stdout);
+}
+
+static void copy_new_project_template()
+{
+	gchar *locale_path;
+	gchar *locale_filename;
+	GeanyDocument *doc = document_get_current();
+	if (doc != NULL)
+	{
+		locale_path = g_path_get_dirname(doc->file_name);
+		locale_filename = doc->file_name;
+	}
+	//printf("%s",locale_path);
+	//execlp("python", "python", "/home/michael/my_script.py", "test", (char*) NULL);
+	char* command = "python3";
+    char* argument_list[] = {"python3", "/home/tvc/tools/python/copy_project_template.py", current_dir, templatetype, NULL};
+	
+	//char* command = "/home/tvc/PycharmProjects/PrepareReport/main.py";
+    //char* argument_list[] = {"/home/tvc/PycharmProjects/makereport/main.py", current_dir, NULL};
+	//printf("%s", locale_filename);
+	
+	int pid = fork();
+    if (pid == 0) {
+        // Newly spawned child Process.
+        int status_code = execvp(command, argument_list);
+		
+        if (status_code == -1) {
+            printf("Terminated Incorrectly\n");
+            return;
+        }
+    }
+    else {
+        // Old Parent process. The C program will come here
+        printf("This line will be printed\n");
+    }
+	waitpid(pid, NULL, 0);
+	refresh();	
+}
+
+static void on_openTerminal()
+{
+	GeanyDocument *doc = document_get_current();
+	gchar *locale_path2;
+	if (doc == NULL)
+	{
+		locale_path2 = "~";
+	}
+	else 
+	{
+		locale_path2 = g_path_get_dirname(doc->file_name);
+	}
+
+	const gchar *prefix="--working-directory=" ;
+	gchar *workingdic = g_strconcat(prefix , locale_path2, NULL);
+
+	char* command = "gnome-terminal";
+    //char* argument_list[] = {"gnome-terminal",  NULL};
+	char* argument_list[] = {"gnome-terminal ", workingdic , NULL};
+
+    if (fork() == 0) {
+        // Newly spawned child Process. This will be taken over by "ls -l"
+        int status_code = execvp(command, argument_list);
+        if (status_code == -1) {
+            printf("Terminated Incorrectly\n");
+            return;
+        }
+    }
+    else {
+        // Old Parent process. The C program will come here
+        printf("This line will be printed\n");
+    }
+	
+}
+
 static GtkWidget *make_tvcbar(void)
 {
 	GtkWidget *wid, *toolbar, *newreport, *iconwidget, *choosereportstyle;
@@ -1452,42 +1584,21 @@ static GtkWidget *make_tvcbar(void)
 	top = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
 	topsub1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
 	topsub2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
-	/*
-	GtkWidget *label, *filterbar;
-
-	filterbar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
-
-	filter_combo = gtk_combo_box_text_new_with_entry();
-	filter_entry = gtk_bin_get_child(GTK_BIN(filter_combo));
-
-	ui_entry_add_clear_icon(GTK_ENTRY(filter_entry));
-	g_signal_connect(filter_entry, "icon-release", G_CALLBACK(on_filter_clear), NULL);
-
-	gtk_widget_set_tooltip_text(filter_entry,
-		_("Filter your files with the usual wildcards. Separate multiple patterns with a space."));
-	g_signal_connect(filter_entry, "activate", G_CALLBACK(on_filter_activate), NULL);
-	g_signal_connect(filter_combo, "changed", G_CALLBACK(ui_combo_box_changed), NULL);
-
-	gtk_box_pack_start(GTK_BOX(filterbar), label, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(filterbar), filter_combo, TRUE, TRUE, 0);
-
-	*/
+	
+	add_stock_item();
 	toolbar = gtk_toolbar_new();
 	//topsub2 = gtk_toolbar_new();
 	
 	label = gtk_label_new(_("TVC:"));
+	gtk_box_pack_start(GTK_BOX(topsub1), label, FALSE, FALSE, 0);
 
 	TVCnumberEntry = gtk_entry_new();
-
 	//ui_entry_add_clear_icon(GTK_ENTRY(filter_entry));
-
 	g_signal_connect(TVCnumberEntry, "changed", G_CALLBACK(ui_textEntry_changed), NULL);
 	g_signal_connect(TVCnumberEntry, "activate", G_CALLBACK(ui_textEntry_activate), NULL);
-
 	gtk_toolbar_set_icon_size(GTK_TOOLBAR(toolbar), GTK_ICON_SIZE_MENU);
 	gtk_toolbar_set_style(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_ICONS);
 
-	gtk_box_pack_start(GTK_BOX(topsub1), label, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(topsub1), TVCnumberEntry, TRUE, TRUE, 0);
 	
 	// makereport_copy
@@ -1502,7 +1613,7 @@ static GtkWidget *make_tvcbar(void)
 	gtk_combo_box_set_active(GTK_COMBO_BOX(choosereportstyle),0);
 	gtk_box_pack_start(GTK_BOX(topsub2), choosereportstyle, FALSE, FALSE, 0);
 	
-	//newreport = gtk_tool_button_new(GEANYSENDMAIL_STOCK_MAIL);
+	//newreport = gtk_tool_button_new(GEANYTEST_STOCK);
 	//gtk_box_pack_start(GTK_BOX(topsub2), newreport, TRUE, TRUE, 0);
 	//g_signal_connect(filter_combo, "changed", G_CALLBACK(ui_combo_box_changed), NULL);
 
@@ -1510,32 +1621,27 @@ static GtkWidget *make_tvcbar(void)
 	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_NEW));
 	gtk_widget_set_tooltip_text(wid, _("New report odt"));
 	g_signal_connect(wid, "clicked", G_CALLBACK(copynewreport), NULL);
-	gtk_container_add(GTK_CONTAINER(topsub2), wid);
+	gtk_box_pack_start(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 0);
 
 	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_APPLY));
 	gtk_widget_set_tooltip_text(wid, _("Fill report odt"));
 	g_signal_connect(wid, "clicked", G_CALLBACK(finalizereport), NULL);
-	gtk_container_add(GTK_CONTAINER(topsub2), wid);
+	gtk_box_pack_start(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 0);
 
-	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_APPLY));
+	//wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_EXECUTE));  //view_refresh GEANYTEST_STOCK
+	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GEANYTEST_STOCK));
+	gtk_widget_set_tooltip_text(wid, _("update current shell"));
+	g_signal_connect(wid, "clicked", G_CALLBACK(update_current_shell), NULL);
+	gtk_box_pack_end(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 0);
+
+	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_PROPERTIES));
 	gtk_widget_set_tooltip_text(wid, _("copy makereport.sh"));
 	g_signal_connect(wid, "clicked", G_CALLBACK(makereport_copy), NULL);
-	gtk_container_add(GTK_CONTAINER(topsub2), wid);
-	/*
-	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_HOME));
-	gtk_widget_set_tooltip_text(wid, _("Home"));
-	//g_signal_connect(wid, "clicked", G_CALLBACK(on_go_home), NULL);
-	gtk_container_add(GTK_CONTAINER(toolbar), wid);
-
-	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_JUMP_TO));
-	gtk_widget_set_tooltip_text(wid, _("Set path from document"));
-	//g_signal_connect(wid, "clicked", G_CALLBACK(on_current_path), NULL);
-	gtk_container_add(GTK_CONTAINER(toolbar), wid);
-	*/
+	//gtk_container_add(GTK_CONTAINER(topsub2), wid);
+	gtk_box_pack_end(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 1);
+	
 	gtk_box_pack_start(GTK_BOX(top), topsub1, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(top), topsub2, FALSE, FALSE, 0);
-	//gtk_box_pack_start(GTK_BOX(top), toolbar, TRUE, TRUE, 0);
-
 
 	//return toolbar;
 	return top;
@@ -1602,6 +1708,72 @@ static GtkWidget *make_filterbar(void)
 
 	return filterbar;
 }
+
+static void fill_combo_entry2 (GtkWidget *combo)
+{
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EP");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EA");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EMP");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "industry");
+}
+
+static GtkWidget *make_start_project(void)
+{
+	/*
+		fill with standardfiles for (EMP/ EP / EC  Industrie )
+		fill with only the stadard script
+		connect to upadt_script and optimiziing script
+		copy pre odt report (EMP/EP/..) different version combobox 
+	*/
+	GtkWidget *wid, *toolbar, *newreport, *iconwidget, *choosereportstyle;
+	GtkWidget *label, *top, *topsub1, *topsub2;
+	top = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+	topsub1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+	topsub2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+
+	toolbar = gtk_toolbar_new();
+	//topsub2 = gtk_toolbar_new();
+	
+	label = gtk_label_new(_("Start Project"));
+	gtk_box_pack_start(GTK_BOX(topsub1), label, FALSE, FALSE, 0);
+
+	// makereport_copy
+	label = gtk_label_new(_("type:"));
+	gtk_box_pack_start(GTK_BOX(topsub2), label, FALSE, FALSE, 0);
+	//gtk_toolbar_set_icon_size(GTK_TOOLBAR(topsub2), GTK_ICON_SIZE_MENU);
+	//gtk_toolbar_set_style(GTK_TOOLBAR(topsub2), GTK_TOOLBAR_ICONS);
+
+	choosereportstyle = gtk_combo_box_text_new();
+    fill_combo_entry2(choosereportstyle);
+	g_signal_connect(choosereportstyle, "changed", G_CALLBACK(set_template_style), NULL);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(choosereportstyle),0);
+	gtk_box_pack_start(GTK_BOX(topsub2), choosereportstyle, FALSE, FALSE, 0);
+	
+	//newreport = gtk_tool_button_new(GEANYTEST_STOCK);
+	//gtk_box_pack_start(GTK_BOX(topsub2), newreport, TRUE, TRUE, 0);
+	//g_signal_connect(filter_combo, "changed", G_CALLBACK(ui_combo_box_changed), NULL);
+
+	// document-edit
+	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_NEW));
+	gtk_widget_set_tooltip_text(wid, _("Project template files copied"));
+	g_signal_connect(wid, "clicked", G_CALLBACK(copy_new_project_template), NULL);
+	gtk_container_add(GTK_CONTAINER(topsub2), wid);
+	
+	/*
+	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_APPLY));
+	gtk_widget_set_tooltip_text(wid, _("Fill report odt"));
+	g_signal_connect(wid, "clicked", G_CALLBACK(finalizereport), NULL);
+	gtk_container_add(GTK_CONTAINER(topsub2), wid);
+	*/
+	gtk_box_pack_start(GTK_BOX(top), topsub1, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(top), topsub2, FALSE, FALSE, 0);
+	//gtk_box_pack_start(GTK_BOX(top), toolbar, TRUE, TRUE, 0);
+
+
+	//return toolbar;
+	return top;
+}
+
 
 static GtkWidget *make_coupbar(void)
 {
@@ -1828,7 +2000,7 @@ void plugin_init(GeanyData *data)
 {
 	GeanyKeyGroup *key_group;
 	GtkWidget *scrollwin, *toolbar, *filterbar, *tvcbar, *coupbar;
-	GtkWidget *NewTVCbar;
+	GtkWidget *NewTVCbar, *NewProjectBar;
 
 	filter = NULL;
 
@@ -1867,6 +2039,10 @@ void plugin_init(GeanyData *data)
 	coupbar = make_coupbar();
 	gtk_box_pack_start(GTK_BOX(file_view_vbox), coupbar, FALSE, FALSE, 0);
 
+	NewProjectBar = make_start_project();
+	gtk_box_pack_start(GTK_BOX(file_view_vbox), NewProjectBar, FALSE, FALSE, 0);
+
+
 
 	/* load settings before file_view "realize" callback */
 	load_settings();
@@ -1874,14 +2050,6 @@ void plugin_init(GeanyData *data)
 	gtk_widget_show_all(file_view_vbox);
 	page_number = gtk_notebook_append_page(GTK_NOTEBOOK(geany->main_widgets->sidebar_notebook),
 		file_view_vbox, gtk_label_new(_("Files")));
-
-
-
-	NewTVCbar = make_newtvcbar();
-	gtk_box_pack_start(GTK_BOX(file_view_vbox), NewTVCbar, FALSE, FALSE, 0);
-
-
-
 
 	gtk_widget_show_all(helper_box);
 	page_number2 = gtk_notebook_append_page(GTK_NOTEBOOK(geany->main_widgets->sidebar_notebook),
@@ -1893,6 +2061,8 @@ void plugin_init(GeanyData *data)
 		0, 0, "focus_file_list", _("Focus File List"), NULL);
 	keybindings_set_item(key_group, KB_FOCUS_PATH_ENTRY, kb_activate,
 		0, 0, "focus_path_entry", _("Focus Path Entry"), NULL);
+	keybindings_set_item(key_group, OPENTER_KB, on_openTerminal, 0, 0, "openTermin", _("openTermin"), NULL);
+	
 
 	plugin_signal_connect(geany_plugin, NULL, "document-activate", TRUE,
 		(GCallback) &document_activate_cb, NULL);
