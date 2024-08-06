@@ -1,0 +1,18 @@
+include $(top_srcdir)/build/vars.build.mk
+plugin = tvcprint
+
+geanyplugins_LTLIBRARIES = tvcprint.la
+
+tvcprint_la_SOURCES = \
+	tvcprint.c \
+	dislin.h
+
+tvcprint_la_CPPFLAGS = -I/usr/local/dislin \
+					  $(AM_CPPFLAGS) \
+					 -DG_LOG_DOMAIN=\"tvcprint\"
+
+tvcprint_la_LIBADD = -ldislin -lm $(COMMONLIBS)
+
+#tvcprint_la_LIBADD = -L/home/miki/fortran/dislin -ldislin -lm $(COMMONLIBS)
+
+include $(top_srcdir)/build/cppcheck.mk
