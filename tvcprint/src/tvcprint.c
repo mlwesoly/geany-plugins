@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <math.h>
+#include "tvcformatter.h"
 
 
 GeanyPlugin	*geany_plugin;
@@ -358,22 +359,19 @@ static void collect_data(gboolean *cancel)
 
 static void printer(GtkMenuItem *menuitem, gpointer user_data)
 {
-    printf(" test 3 ");
+	formatterfunc();
+    printf(" test 3 \n");
     fflush(stdout);
-    collect_data(FALSE);
-	exa_1();
+    //collect_data(FALSE);
+	//exa_1();
 }
 
 
 void plugin_init(G_GNUC_UNUSED GeanyData *data)
 {
     GeanyKeyGroup *key_group;
-    
-
+    printf("\n\n");
 	//key_group = plugin_set_key_group(geany_plugin, "GeanyCtags", KB_COUNT, kb_callback);
-
-    printf("test1");
-    fflush(stdout);
     
     s_context_sep_item = gtk_separator_menu_item_new();
 	gtk_widget_show(s_context_sep_item);

@@ -5,6 +5,9 @@ geanyplugins_LTLIBRARIES = tvcprint.la
 
 tvcprint_la_SOURCES = \
 	tvcprint.c \
+	tvcprint.h \
+	tvcformatter.c \
+	tvcformatter.h \
 	dislin.h
 
 tvcprint_la_CPPFLAGS = $(AM_CPPFLAGS) \
