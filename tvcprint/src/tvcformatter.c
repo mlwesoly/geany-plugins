@@ -48,7 +48,8 @@ static void start_formatter(void)
     }
 	waitpid(pid, NULL, 0);
     */
-    if(fork() == 0)            //first fork
+    int pid = fork();
+    if(pid == 0)            //first fork
     {
         close(STDOUT_FILENO);  //closing stdout
         dup(des_p[1]);         //replacing stdout with pipe write 
@@ -61,7 +62,8 @@ static void start_formatter(void)
         exit(1);
     }
 
-    if(fork() == 0)            //creating 2nd child
+    pid = fork();
+    if(pid == 0)            //creating 2nd child
     {
         close(STDIN_FILENO);   //closing stdin
         dup(des_p[0]);         //replacing stdin with pipe read
