@@ -1,5 +1,5 @@
 /*
- *	  Copyright 2010-2014 Jiri Techet <techet@gmail.com>
+ *	  C
  *
  *	  This program is free software; you can redistribute it and/or modify
  *	  it under the terms of the GNU General Public License as published by
@@ -33,7 +33,9 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <math.h>
+#include "tvcprint.h"
 #include "tvcformatter.h"
+#include "tvcmatrixreader.h"
 
 
 GeanyPlugin	*geany_plugin;
@@ -46,9 +48,8 @@ enum
 };
 */
 
-static GtkWidget *s_context_fdec_item, *s_context_sep_item, *s_sep_item;
+static GtkWidget *s_context_fdec_item, *s_context_sep_item, *s_sep_item, *s_context_formatter_item;
 
-#define MAX_LINES 250000
 
 PLUGIN_VERSION_CHECK(GEANY_API_VERSION)
 
@@ -60,8 +61,6 @@ PLUGIN_SET_TRANSLATABLE_INFO(LOCALEDIR, GETTEXT_PACKAGE,
 	"0.0.1", " ")
 
 static GtkWidget *main_menu_item = NULL;
-static gint start_pos, start_line;
-static gint end_pos, end_line;
 
 static float xray[300], yray[300], y1ray[300], y2ray[300], zmat[50][50];
 static char  cl1[500], cl2[500];
@@ -70,7 +69,7 @@ static int id_lis1, id_lis2, id_pbut;
 
 static int n_rows = 200;
 static int n_cols = 50;
-static float kernel[300][50];
+//static float kernel[300][50];
 
 // TODO : falls erste zeile namen hat, einlesen für die legende?
 // oder legende standardmäßig mit spalte 1, spalte 2 ...beschriften
@@ -170,8 +169,8 @@ void exa_1 (void)
 
     
     
-	xsteps = round(xmax-xmin)/8.0;
-	ysteps = round(ymax-ymin)/8.0;
+	xsteps = (xmax-xmin)/8.0;
+	ysteps = (ymax-ymin)/8.0;
 	xstart = xmin;
 	ystart = ymin;
 	if(xmin>0){
@@ -218,152 +217,15 @@ void exa_1 (void)
 }
 
 
-static gboolean can_insert_numbers(void)
-{
-	GeanyDocument *doc = document_get_current();
-
-	if (doc && !doc->readonly)
-	{
-		ScintillaObject *sci = doc->editor->sci;
-
-		if (sci_has_selection(sci) && (sci_get_selection_mode(sci) == SC_SEL_RECTANGLE ||
-			sci_get_selection_mode(sci) == SC_SEL_THIN))
-		{
-			start_pos = sci_get_selection_start(sci);
-			start_line = sci_get_line_from_position(sci, start_pos);
-			end_pos = sci_get_selection_end(sci);
-			end_line = sci_get_line_from_position(sci, end_pos);
-
-			return end_line - start_line < MAX_LINES;
-		}
-	}
-
-	return FALSE;
-}
-
-#define sci_point_x_from_position(sci, position) \
-	scintilla_send_message(sci, SCI_POINTXFROMPOSITION, 0, position)
-#define sci_get_pos_at_line_sel_start(sci, line) \
-	scintilla_send_message(sci, SCI_GETLINESELSTARTPOSITION, line, 0)
-#define sci_get_endpos_at_line_sel_start(sci, line) \
-	scintilla_send_message(sci, SCI_GETLINESELENDPOSITION, line, 0)
-
-static void collect_data(gboolean *cancel)
-{
-    can_insert_numbers();
-	/* editor */
-	ScintillaObject *sci = document_get_current()->editor->sci;
-	gint xinsert = sci_point_x_from_position(sci, start_pos);
-	gint xend = sci_point_x_from_position(sci, end_pos);
-	gint *line_pos = g_new(gint, end_line - start_line + 1);
-	gint line_endpos=0;
-	gint line, i;
-	/* generator */
-	gint64 value;
-	unsigned count = 0;
-	size_t prefix_len = 0;
-	int plus = 0, minus;
-	size_t length, lend;
-	gchar *buffer;
-	gchar *buffer2,*buffer3;
-	gint numlength;
-	gdouble sum=0.0;
-
-	if (xend < xinsert)
-		xinsert = xend;
-
-	ui_progress_bar_start(_("Counting..."));
-	/* lines shorter than the current selection are skipped */
-	line_endpos = sci_get_endpos_at_line_sel_start(sci,start_line) -
-				sci_get_position_from_line(sci, start_line);
-
-	for (line = start_line, i = 0; line <= end_line; line++, i++)
-	{
-		if (sci_point_x_from_position(sci,
-			scintilla_send_message(sci, SCI_GETLINEENDPOSITION, line, 0)) >= xinsert)
-		{
-			line_pos[i] = sci_get_pos_at_line_sel_start(sci, line) -
-				sci_get_position_from_line(sci, line);
-			count++;
-		}
-		else
-			line_pos[i] = -1;
-
-		if (cancel && i % 2500 == 0)
-		{
-			//update_display();
-			if (*cancel)
-			{
-				ui_progress_bar_stop();
-				g_free(line_pos);
-				return;
-			}
-		}
-	}
-
-	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(geany->main_widgets->progressbar),
-		_("Preparing..."));
-
-	//update_display();
-	sci_start_undo_action(sci);
-	//sci_replace_sel(sci, "");
-
-	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(geany->main_widgets->progressbar),
-		_("Inserting..."));
-	for (line = start_line, i = 0; line <= end_line; line++, i++)
-	{
-		gchar *beg, *end;
-		gint insert_pos;
-		gint old_pos_end;
-		gchar **parts;
-		char * test;
-
-
-		if (line_pos[i] < 0)
-			continue;
-
-		insert_pos = sci_get_position_from_line(sci, line) + line_pos[i];
-		buffer2 = sci_get_contents_range(sci,insert_pos, insert_pos + ( line_endpos - line_pos[i]) );
-
-		buffer3 = buffer2;
-		test = strtok(buffer3," ");
-		int j = 0;
-		while( test != NULL ) {
-			kernel[i+1][j] = strtod(test, NULL);
-			sum+=strtod(test, NULL);
-			test = strtok(NULL," ");
-            //printf("%f \n",kernel[i][j]);
-			j++;
-		}
-
-        kernel[0][1] = j;
-        kernel[0][0] = i + 1;
-		//printf("\n");
-
-		//fflush(stdout);
-	}
-    /*
-	for (int i = 0; i < 20; i++){
-		for (int j = 0; j < 3; j++){
-			printf("%f ", kernel[i][j]);
-		}
-		printf("\n");
-	}
-    */
-	ui_set_statusbar(TRUE,"%.2f",sum);
-	sci_end_undo_action(sci);
-	g_free(buffer);
-	g_free(line_pos);
-	ui_progress_bar_stop();
-}
-
 static void printer(GtkMenuItem *menuitem, gpointer user_data)
 {
+    matrixreader();
+	exa_1();
+}
+
+static void formattercall(GtkMenuItem *menuitem, gpointer user_data)
+{
 	formatterfunc();
-    printf(" test 3 \n");
-    fflush(stdout);
-    //collect_data(FALSE);
-	//exa_1();
 }
 
 
@@ -382,14 +244,21 @@ void plugin_init(G_GNUC_UNUSED GeanyData *data)
 	gtk_menu_shell_prepend(GTK_MENU_SHELL(geany->main_widgets->editor_menu), s_context_fdec_item);
 	g_signal_connect((gpointer) s_context_fdec_item, "activate", G_CALLBACK(printer), NULL);
 
+    s_context_formatter_item = gtk_menu_item_new_with_mnemonic(_("formatter"));
+	gtk_widget_show(s_context_formatter_item);
+	gtk_menu_shell_prepend(GTK_MENU_SHELL(geany->main_widgets->editor_menu), s_context_formatter_item);
+	g_signal_connect((gpointer) s_context_formatter_item, "activate", G_CALLBACK(formattercall), NULL);
+
 
 	gtk_widget_set_sensitive(GTK_WIDGET(s_context_fdec_item), TRUE);
+	gtk_widget_set_sensitive(GTK_WIDGET(s_context_formatter_item), TRUE);
 }
 
 
 void plugin_cleanup(void)
 {
     gtk_widget_destroy(s_context_fdec_item);
+    gtk_widget_destroy(s_context_formatter_item);
 	gtk_widget_destroy(s_context_sep_item);
 	gtk_widget_destroy(s_sep_item);
 

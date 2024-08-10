@@ -8,6 +8,8 @@ tvcprint_la_SOURCES = \
 	tvcprint.h \
 	tvcformatter.c \
 	tvcformatter.h \
+	tvcmatrixreader.c \
+	tvcmatrixreader.h \
 	dislin.h
 
 tvcprint_la_CPPFLAGS = $(AM_CPPFLAGS) \

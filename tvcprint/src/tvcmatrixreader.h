@@ -22,12 +22,12 @@
  */
 
 
-#ifndef TVCPRINT_H
-#define TVCPRINT_H 1
+#ifndef __TVCMATRIXREADER_H__
+#define __TVCMATRIXREADER_H__
 
 
-extern GeanyPlugin		*geany_plugin;
-extern GeanyData		*geany_data;
+void matrixreader();
 
+extern float kernel[300][50];
 
 #endif

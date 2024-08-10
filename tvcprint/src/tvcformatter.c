@@ -24,8 +24,6 @@ static void start_formatter(void)
         exit(1);
     }
 
-    //printf("%s",locale_filename);
-
 	//char* command = "/home/miki/awk/tvcformatter";
     //char* argument_list[] = {"/home/miki/awk/tvcformatter -F ", locale_filename, " | " , "xclip", "-selection clipboard" , NULL}; //| xclip -selection clipboard
 	
