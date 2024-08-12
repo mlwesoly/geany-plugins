@@ -36,6 +36,7 @@
 #include "tvcprint.h"
 #include "tvcformatter.h"
 #include "tvcmatrixreader.h"
+#include "tvcdialog.h"
 
 
 GeanyPlugin	*geany_plugin;
@@ -48,7 +49,7 @@ enum
 };
 */
 
-static GtkWidget *s_context_fdec_item, *s_context_sep_item, *s_sep_item, *s_context_formatter_item;
+static GtkWidget *s_context_fdec_item, *s_context_sep_item, *s_sep_item, *s_context_formatter_item, *s_context_searcher_item;
 
 
 PLUGIN_VERSION_CHECK(GEANY_API_VERSION)
@@ -226,6 +227,12 @@ static void printer(GtkMenuItem *menuitem, gpointer user_data)
 static void formattercall(GtkMenuItem *menuitem, gpointer user_data)
 {
 	formatterfunc();
+    //calldialog();
+}
+
+static void searchcall(GtkMenuItem *menuitem, gpointer user_data)
+{
+    calldialog();
 }
 
 
@@ -250,15 +257,26 @@ void plugin_init(G_GNUC_UNUSED GeanyData *data)
 	g_signal_connect((gpointer) s_context_formatter_item, "activate", G_CALLBACK(formattercall), NULL);
 
 
+    s_context_searcher_item = gtk_menu_item_new_with_mnemonic(_("searcher"));
+	gtk_widget_show(s_context_searcher_item);
+	gtk_menu_shell_prepend(GTK_MENU_SHELL(geany->main_widgets->editor_menu), s_context_searcher_item);
+	g_signal_connect((gpointer) s_context_searcher_item, "activate", G_CALLBACK(searchcall), NULL);
+
 	gtk_widget_set_sensitive(GTK_WIDGET(s_context_fdec_item), TRUE);
 	gtk_widget_set_sensitive(GTK_WIDGET(s_context_formatter_item), TRUE);
+	gtk_widget_set_sensitive(GTK_WIDGET(s_context_searcher_item), TRUE);
 }
 
+GtkWidget * plugin_configure (GtkDialog *dialog)
+{
+    call_plugin_configure(dialog);
+}
 
 void plugin_cleanup(void)
 {
     gtk_widget_destroy(s_context_fdec_item);
     gtk_widget_destroy(s_context_formatter_item);
+    gtk_widget_destroy(s_context_searcher_item);
 	gtk_widget_destroy(s_context_sep_item);
 	gtk_widget_destroy(s_sep_item);
 
