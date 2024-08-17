@@ -12,6 +12,8 @@ tvcprint_la_SOURCES = \
 	tvcmatrixreader.h \
 	tvcdialog.c \
 	tvcdialog.h \
+	tvcreflist.c \
+	tvcreflist.h \
 	dislin.h
 
 tvcprint_la_CPPFLAGS = $(AM_CPPFLAGS) \

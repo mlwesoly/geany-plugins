@@ -14,21 +14,26 @@
 #include <document.h>
 
 
+
 static void first_dialog(void)
 {
+    GtkWidget *vbox01, *vbox02, *vboxbig;
     // This creates (but does not yet display) a message dialog with
     // the given text as the title.
-    GtkWidget* hello = gtk_message_dialog_new(
-        NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
-        "Hi, I'm a message dialog!");
+    vbox01 = gtk_vbox_new(GTK_ORIENTATION_VERTICAL, 12);
+    vbox02 = gtk_vbox_new(GTK_ORIENTATION_VERTICAL, 12);
 
-    // The (optional) secondary text shows up in the "body" of the
-    // dialog. Note that printf-style formatting is available.
-    gtk_message_dialog_format_secondary_text(
-        GTK_MESSAGE_DIALOG(hello),
-        "This is secondary text with printf-style formatting: %d",
-        99);
 
+    GtkWidget* hello = gtk_dialog_new_with_buttons("My dialog",
+                                       NULL,
+                                       GTK_DIALOG_MODAL,
+                                       _("_OK"),
+                                       GTK_RESPONSE_ACCEPT,
+                                       _("_Cancel"),
+                                       GTK_RESPONSE_REJECT,
+                                       NULL);
+
+    
     // This displays our message dialog as a modal dialog, waiting for
     // the user to click a button before moving on. The return value
     // comes from the :response signal emitted by the dialog. By

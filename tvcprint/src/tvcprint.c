@@ -37,6 +37,7 @@
 #include "tvcformatter.h"
 #include "tvcmatrixreader.h"
 #include "tvcdialog.h"
+#include "tvcreflist.h"
 
 
 GeanyPlugin	*geany_plugin;
@@ -232,7 +233,8 @@ static void formattercall(GtkMenuItem *menuitem, gpointer user_data)
 
 static void searchcall(GtkMenuItem *menuitem, gpointer user_data)
 {
-    calldialog();
+    searchinreflist();
+    //calldialog();
 }
 
 
