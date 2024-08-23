@@ -117,105 +117,121 @@ static float getMin(int c,int n, float b[200][50])
     }
 
 
-void exa_1 (void)
+int exa_1 (void)
 { 
+    // put this part in an seperate thread/pid
+    // so geany does not stop to work
     int n = (int) kernel[0][0], i;
     int m = (int) kernel[0][1];
-	float xsteps,ysteps,xstart,ystart,xstop,ystop;
     if (m<2) return;
+    float xsteps,ysteps,xstart,ystart,xstop,ystop;
     float xmax, xmin, ymax, ymin;
     float tempymax,tempymin;
-
-    for (i = 0; i < n; i++)
-    { xray[i] = (float) kernel[i+1][0];
-
-     // y1ray[i] = (float) kernel[i+1][1];
-    //y2ray[i] = (float) ;
-    }
-
-    metafl ("cons");
-    scrmod ("revers");
-    window (20, 20, 1200, 850);
-    disini ();
-    pagera ();
-    complx ();
-    axspos (350, 1800); // to the right , down
-    axslen (2500, 1500);
-
-    name   ("X-axis", "x");
-    name   ("Y-axis", "y");
-
-    labdig (-1, "x");
-    ticks  (10, "xy");
-
-    titlin ("Demo", 2);
-    //titlin ("SIN(X), COS(X)", 3);
-
-    xmax = getMax(0,n,kernel);
-    xmin = getMin(0,n,kernel);
-    for (i = 1; i < m; i++){
-        tempymax = getMax(i,n,kernel);
-        tempymin = getMin(i,n,kernel);
-        if(i==1){
-            ymin=tempymin;
-            ymax=tempymax;
-        }else{
-            if(ymin>tempymin){
-                ymin = tempymin;
-            }
-            if(ymax<tempymax){
-                ymax=tempymax;
-            }
-        }
-    }
-
     
-    
-	xsteps = (xmax-xmin)/8.0;
-	ysteps = (ymax-ymin)/8.0;
-	xstart = xmin;
-	ystart = ymin;
-	if(xmin>0){
-		xmin=xmin*0.95;
-	}
-	if(xmax<0){
-		xmax=xmax*0.95;
-	}else{
-		xmax=xmax*1.05;
-	}
-
-	if(ymin>0){
-        ystart=0.0;
-		ymin=0.0;
-    }else{
-		ymin=ymin*1.05;
-	}
-	if(ymax>0){
-		ymax=ymax*1.05;
-	}else{
-		ymax=0.0;
-	}
-
-    
-    graf   (xmin, xmax, xstart, xsteps, ymin, ymax, ystart, ysteps);
-    title  ();
-
-    color  ("red");
-	chncrv ("COLOR");
-	inccrv (1);	
-    for(int h = 1;h < m; h++)
-    {
+    int pid = fork();
+    if (pid == 0) {
+        // Newly spawned child Process.
         for (i = 0; i < n; i++)
-        {
-            y1ray[i] = (float) kernel[i+1][h];
+        { xray[i] = (float) kernel[i+1][0];
+
+        // y1ray[i] = (float) kernel[i+1][1];
+        //y2ray[i] = (float) ;
         }
-        curve  (xray, y1ray, n);
+
+        metafl ("cons");
+        scrmod ("revers");
+        window (20, 20, 1200, 850);
+        disini ();
+        pagera ();
+        complx ();
+        axspos (350, 1800); // to the right , down
+        axslen (2500, 1500);
+
+        name   ("X-axis", "x");
+        name   ("Y-axis", "y");
+
+        labdig (-1, "x");
+        ticks  (10, "xy");
+
+        titlin ("Demo", 2);
+        //titlin ("SIN(X), COS(X)", 3);
+
+        xmax = getMax(0,n,kernel);
+        xmin = getMin(0,n,kernel);
+        for (i = 1; i < m; i++){
+            tempymax = getMax(i,n,kernel);
+            tempymin = getMin(i,n,kernel);
+            if(i==1){
+                ymin=tempymin;
+                ymax=tempymax;
+            }else{
+                if(ymin>tempymin){
+                    ymin = tempymin;
+                }
+                if(ymax<tempymax){
+                    ymax=tempymax;
+                }
+            }
+        }
+
+        xsteps = (xmax-xmin)/8.0;
+        ysteps = (ymax-ymin)/8.0;
+        xstart = xmin;
+        ystart = ymin;
+        if(xmin>0){
+            xmin=xmin*0.95;
+        }
+        if(xmax<0){
+            xmax=xmax*0.95;
+        }else{
+            xmax=xmax*1.05;
+        }
+
+        if(ymin>0){
+            ystart=0.0;
+            ymin=0.0;
+        }else{
+            ymin=ymin*1.05;
+        }
+        if(ymax>0){
+            ymax=ymax*1.05;
+        }else{
+            ymax=0.0;
+        }
+
+        
+        graf   (xmin, xmax, xstart, xsteps, ymin, ymax, ystart, ysteps);
+        title  ();
+        char *cbuf[50];
+        legini (cbuf,m-1,50);
+        
+        legtit (" ");
+
+        color  ("red");
+        chncrv ("COLOR");
+        inccrv (1);	
+        for(int h = 1;h < m; h++)
+        {
+            gchar *my_string = g_strdup_printf("%i", h);
+            leglin (cbuf,my_string,h);
+            for (i = 0; i < n; i++)
+            {
+                y1ray[i] = (float) kernel[i+1][h];
+            }
+            curve  (xray, y1ray, n);
+        }
+        legend (cbuf,3);
+        color  ("fore");
+        dash   ();
+        xaxgit ();
+        disfin ();
+        exit(0);
+    }
+    else {
+        printf("This line will be printed\n");
     }
 
-    color  ("fore");
-    dash   ();
-    xaxgit ();
-    disfin ();
+    
 }
 
 
