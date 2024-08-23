@@ -15,6 +15,8 @@
 #include <glib.h>
 #include <glib/gstdio.h>
 #include <gdk/gdkkeysyms.h>
+#include "tvctreebrowser.h"
+#include "tvcaddition.h"
 
 #include "geany.h"
 #include <geanyplugin.h>
@@ -34,7 +36,7 @@ static gint 				page_number 				= 0;
 static GtkTreeStore 		*treestore;
 static GtkWidget 			*treeview;
 static GtkWidget 			*sidebar_vbox;
-static GtkWidget 			*sidebar_vbox_bars;
+GtkWidget 			*sidebar_vbox_bars;
 static GtkWidget 			*filter;
 static GtkWidget 			*addressbar;
 static gchar 				*addressbar_last_address 	= NULL;
@@ -472,7 +474,7 @@ treebrowser_checkdir(gchar *directory)
 }
 
 static void
-treebrowser_chroot(const gchar *dir)
+tvctreebrowser_chroot(const gchar *dir)
 {
 	gchar *directory;
 
@@ -913,7 +915,7 @@ treebrowser_track_current(void)
 				froot = g_strdup(G_DIR_SEPARATOR_S);
 
 			if (utils_str_equal(froot, addressbar_last_address) != TRUE)
-				treebrowser_chroot(froot);
+				tvctreebrowser_chroot(froot);
 
 			treebrowser_expand_to_path(froot, path_current);
 		}
@@ -985,7 +987,7 @@ on_menu_go_up(GtkMenuItem *menuitem, gpointer *user_data)
 	gchar *uri;
 
 	uri = g_path_get_dirname(addressbar_last_address);
-	treebrowser_chroot(uri);
+	tvctreebrowser_chroot(uri);
 	g_free(uri);
 }
 
@@ -995,7 +997,7 @@ on_menu_current_path(GtkMenuItem *menuitem, gpointer *user_data)
 	gchar *uri;
 
 	uri = get_default_dir();
-	treebrowser_chroot(uri);
+	tvctreebrowser_chroot(uri);
 	g_free(uri);
 }
 
@@ -1045,7 +1047,7 @@ static void
 on_menu_set_as_root(GtkMenuItem *menuitem, gchar *uri)
 {
 	if (g_file_test(uri, G_FILE_TEST_IS_DIR))
-		treebrowser_chroot(uri);
+		tvctreebrowser_chroot(uri);
 }
 
 static void
@@ -1251,7 +1253,7 @@ on_menu_show_bookmarks(GtkMenuItem *menuitem, gpointer *user_data)
 {
 	CONFIG_SHOW_BOOKMARKS = gtk_check_menu_item_get_active(GTK_CHECK_MENU_ITEM(menuitem));
 	save_settings();
-	treebrowser_chroot(addressbar_last_address);
+	tvctreebrowser_chroot(addressbar_last_address);
 }
 
 static void
@@ -1453,14 +1455,14 @@ on_button_go_up(void)
 	gchar *uri;
 
 	uri = g_path_get_dirname(addressbar_last_address);
-	treebrowser_chroot(uri);
+	tvctreebrowser_chroot(uri);
 	g_free(uri);
 }
 
 static void
 on_button_refresh(void)
 {
-	treebrowser_chroot(addressbar_last_address);
+	tvctreebrowser_chroot(addressbar_last_address);
 }
 
 static void
@@ -1469,7 +1471,7 @@ on_button_go_home(void)
 	gchar *uri;
 
 	uri = g_strdup(g_get_home_dir());
-	treebrowser_chroot(uri);
+	tvctreebrowser_chroot(uri);
 	g_free(uri);
 }
 
@@ -1479,7 +1481,7 @@ on_button_current_path(void)
 	gchar *uri;
 
 	uri = get_default_dir();
-	treebrowser_chroot(uri);
+	tvctreebrowser_chroot(uri);
 	g_free(uri);
 }
 
@@ -1493,20 +1495,20 @@ static void
 on_addressbar_activate(GtkEntry *entry, gpointer user_data)
 {
 	gchar *directory = gtk_editable_get_chars(GTK_EDITABLE(entry), 0, -1);
-	treebrowser_chroot(directory);
+	tvctreebrowser_chroot(directory);
 }
 
 static void
 on_filter_activate(GtkEntry *entry, gpointer user_data)
 {
-	treebrowser_chroot(addressbar_last_address);
+	tvctreebrowser_chroot(addressbar_last_address);
 }
 
 static void
 on_filter_clear(GtkEntry *entry, gint icon_pos, GdkEvent *event, gpointer data)
 {
 	gtk_entry_set_text(entry, "");
-	treebrowser_chroot(addressbar_last_address);
+	tvctreebrowser_chroot(addressbar_last_address);
 }
 
 
@@ -1517,7 +1519,13 @@ on_filter_clear(GtkEntry *entry, gint icon_pos, GdkEvent *event, gpointer data)
 static gboolean
 on_treeview_mouseclick(GtkWidget *widget, GdkEventButton *event, GtkTreeSelection *selection)
 {
-	if (event->button == 3)
+	if (event->button == 1 && event->type == GDK_2BUTTON_PRESS)
+	{
+		//on_openpdf_clicked(NULL, NULL);
+		ui_set_statusbar(TRUE,"button 1");
+		return TRUE;
+	}
+	else if (event->button == 3)
 	{
 		GtkTreeIter 	iter;
 		GtkTreeModel 	*model;
@@ -1675,7 +1683,7 @@ on_treeview_row_activated(GtkWidget *widget, GtkTreePath *path, GtkTreeViewColum
 
 	if (g_file_test (uri, G_FILE_TEST_IS_DIR))
 		if (CONFIG_CHROOT_ON_DCLICK)
-			treebrowser_chroot(uri);
+			tvctreebrowser_chroot(uri);
 		else
 			if (gtk_tree_view_row_expanded(GTK_TREE_VIEW(widget), path))
 				gtk_tree_view_collapse_row(GTK_TREE_VIEW(widget), path);
@@ -1884,8 +1892,8 @@ create_sidebar(void)
 #endif
 
 	treeview 				= create_view_and_model();
-	sidebar_vbox 			= gtk_box_new(FALSE,GTK_ORIENTATION_VERTICAL); // gtk_vbox_new(FALSE, 0);
-	sidebar_vbox_bars 		= gtk_box_new(FALSE,GTK_ORIENTATION_VERTICAL); // gtk_vbox_new(FALSE, 0);
+	sidebar_vbox 			= gtk_box_new(GTK_ORIENTATION_VERTICAL,0); // gtk_vbox_new(FALSE, 0);
+	sidebar_vbox_bars 		= gtk_box_new(GTK_ORIENTATION_VERTICAL,0); // gtk_vbox_new(FALSE, 0);
 	selection 				= gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
 	addressbar 				= gtk_entry_new();
 #if GTK_CHECK_VERSION(3, 10, 0)
@@ -1895,6 +1903,8 @@ create_sidebar(void)
 	scrollwin 				= gtk_scrolled_window_new(NULL, NULL);
 
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollwin), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+	
+	create_sidebar_addition();
 
 	toolbar = gtk_toolbar_new();
 	gtk_toolbar_set_icon_size(GTK_TOOLBAR(toolbar), GTK_ICON_SIZE_MENU);
@@ -1961,9 +1971,11 @@ create_sidebar(void)
 	gtk_container_add(GTK_CONTAINER(toolbar), wid);
 
 	gtk_container_add(GTK_CONTAINER(scrollwin), 			treeview);
+	add_to_sidebar_addition();
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox_bars), 			filter, 			FALSE, TRUE,  1);
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox_bars), 			addressbar, 		FALSE, TRUE,  1);
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox_bars), 			toolbar, 			FALSE, TRUE,  1);
+	
 
 	gtk_widget_set_tooltip_text(filter,
 		_("Filter (*.c;*.h;*.cpp), and if you want temporary filter using the '!' reverse try for example this '!;*.c;*.h;*.cpp'"));
@@ -2032,21 +2044,21 @@ load_settings(void)
 
 	g_key_file_load_from_file(config, CONFIG_FILE, G_KEY_FILE_NONE, NULL);
 
-	CONFIG_OPEN_EXTERNAL_CMD 		= utils_get_setting_string(config, "treebrowser", "open_external_cmd", 	CONFIG_OPEN_EXTERNAL_CMD_DEFAULT);
-	CONFIG_OPEN_TERMINAL 			= utils_get_setting_string(config, "treebrowser", "open_terminal", CONFIG_OPEN_TERMINAL_DEFAULT);
-	CONFIG_REVERSE_FILTER 			= utils_get_setting_boolean(config, "treebrowser", "reverse_filter", 		CONFIG_REVERSE_FILTER);
-	CONFIG_ONE_CLICK_CHDOC 			= utils_get_setting_boolean(config, "treebrowser", "one_click_chdoc", 		CONFIG_ONE_CLICK_CHDOC);
-	CONFIG_SHOW_HIDDEN_FILES 		= utils_get_setting_boolean(config, "treebrowser", "show_hidden_files", 	CONFIG_SHOW_HIDDEN_FILES);
-	CONFIG_HIDE_OBJECT_FILES 		= utils_get_setting_boolean(config, "treebrowser", "hide_object_files", 	CONFIG_HIDE_OBJECT_FILES);
-	CONFIG_SHOW_BARS 				= utils_get_setting_integer(config, "treebrowser", "show_bars", 			CONFIG_SHOW_BARS);
-	CONFIG_CHROOT_ON_DCLICK 		= utils_get_setting_boolean(config, "treebrowser", "chroot_on_dclick", 		CONFIG_CHROOT_ON_DCLICK);
-	CONFIG_FOLLOW_CURRENT_DOC 		= utils_get_setting_boolean(config, "treebrowser", "follow_current_doc", 	CONFIG_FOLLOW_CURRENT_DOC);
-	CONFIG_ON_DELETE_CLOSE_FILE 	= utils_get_setting_boolean(config, "treebrowser", "on_delete_close_file", 	CONFIG_ON_DELETE_CLOSE_FILE);
-	CONFIG_ON_OPEN_FOCUS_EDITOR		= utils_get_setting_boolean(config, "treebrowser", "on_open_focus_editor", 	CONFIG_ON_OPEN_FOCUS_EDITOR);
-	CONFIG_SHOW_TREE_LINES 			= utils_get_setting_boolean(config, "treebrowser", "show_tree_lines", 		CONFIG_SHOW_TREE_LINES);
-	CONFIG_SHOW_BOOKMARKS 			= utils_get_setting_boolean(config, "treebrowser", "show_bookmarks", 		CONFIG_SHOW_BOOKMARKS);
-	CONFIG_SHOW_ICONS 				= utils_get_setting_integer(config, "treebrowser", "show_icons", 			CONFIG_SHOW_ICONS);
-	CONFIG_OPEN_NEW_FILES			= utils_get_setting_boolean(config, "treebrowser", "open_new_files",		CONFIG_OPEN_NEW_FILES);
+	CONFIG_OPEN_EXTERNAL_CMD 		= utils_get_setting_string (config, "tvctreebrowser", "open_external_cmd", 	CONFIG_OPEN_EXTERNAL_CMD_DEFAULT);
+	CONFIG_OPEN_TERMINAL 			= utils_get_setting_string (config, "tvctreebrowser", "open_terminal", CONFIG_OPEN_TERMINAL_DEFAULT);
+	CONFIG_REVERSE_FILTER 			= utils_get_setting_boolean(config, "tvctreebrowser", "reverse_filter", 		CONFIG_REVERSE_FILTER);
+	CONFIG_ONE_CLICK_CHDOC 			= utils_get_setting_boolean(config, "tvctreebrowser", "one_click_chdoc", 		CONFIG_ONE_CLICK_CHDOC);
+	CONFIG_SHOW_HIDDEN_FILES 		= utils_get_setting_boolean(config, "tvctreebrowser", "show_hidden_files", 	CONFIG_SHOW_HIDDEN_FILES);
+	CONFIG_HIDE_OBJECT_FILES 		= utils_get_setting_boolean(config, "tvctreebrowser", "hide_object_files", 	CONFIG_HIDE_OBJECT_FILES);
+	CONFIG_SHOW_BARS 				= utils_get_setting_integer(config, "tvctreebrowser", "show_bars", 			CONFIG_SHOW_BARS);
+	CONFIG_CHROOT_ON_DCLICK 		= utils_get_setting_boolean(config, "tvctreebrowser", "chroot_on_dclick", 		CONFIG_CHROOT_ON_DCLICK);
+	CONFIG_FOLLOW_CURRENT_DOC 		= utils_get_setting_boolean(config, "tvctreebrowser", "follow_current_doc", 	CONFIG_FOLLOW_CURRENT_DOC);
+	CONFIG_ON_DELETE_CLOSE_FILE 	= utils_get_setting_boolean(config, "tvctreebrowser", "on_delete_close_file", 	CONFIG_ON_DELETE_CLOSE_FILE);
+	CONFIG_ON_OPEN_FOCUS_EDITOR		= utils_get_setting_boolean(config, "tvctreebrowser", "on_open_focus_editor", 	CONFIG_ON_OPEN_FOCUS_EDITOR);
+	CONFIG_SHOW_TREE_LINES 			= utils_get_setting_boolean(config, "tvctreebrowser", "show_tree_lines", 		CONFIG_SHOW_TREE_LINES);
+	CONFIG_SHOW_BOOKMARKS 			= utils_get_setting_boolean(config, "tvctreebrowser", "show_bookmarks", 		CONFIG_SHOW_BOOKMARKS);
+	CONFIG_SHOW_ICONS 				= utils_get_setting_integer(config, "tvctreebrowser", "show_icons", 			CONFIG_SHOW_ICONS);
+	CONFIG_OPEN_NEW_FILES			= utils_get_setting_boolean(config, "tvctreebrowser", "open_new_files",		CONFIG_OPEN_NEW_FILES);
 
 	g_key_file_free(config);
 }
@@ -2118,7 +2130,7 @@ on_configure_response(GtkDialog *dialog, gint response, gpointer user_data)
 	if (save_settings() == TRUE)
 	{
 		gtk_tree_view_set_enable_tree_lines(GTK_TREE_VIEW(treeview), CONFIG_SHOW_TREE_LINES);
-		treebrowser_chroot(addressbar_last_address);
+		tvctreebrowser_chroot(addressbar_last_address);
 		if (CONFIG_SHOW_BOOKMARKS)
 			treebrowser_load_bookmarks();
 		showbars(CONFIG_SHOW_BARS);
@@ -2134,8 +2146,8 @@ plugin_configure(GtkDialog *dialog)
 	GtkWidget 		*label;
 	GtkWidget 		*vbox, *hbox;
 
-	vbox 	= gtk_box_new(FALSE,GTK_ORIENTATION_VERTICAL); // gtk_vbox_new(FALSE, 0);
-	hbox 	= gtk_box_new(FALSE,GTK_ORIENTATION_HORIZONTAL); // gtk_hbox_new(FALSE, 0);
+	vbox 	= gtk_box_new(GTK_ORIENTATION_VERTICAL,0); // gtk_vbox_new(FALSE, 0);
+	hbox 	= gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0); // gtk_hbox_new(FALSE, 0);
 
 	label 	= gtk_label_new(_("External open command"));
 	configure_widgets.OPEN_EXTERNAL_CMD = gtk_entry_new();
@@ -2154,7 +2166,7 @@ plugin_configure(GtkDialog *dialog)
 	gtk_box_pack_start(GTK_BOX(hbox), configure_widgets.OPEN_EXTERNAL_CMD, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 6);
 
-	hbox = gtk_box_new(FALSE,GTK_ORIENTATION_HORIZONTAL); // gtk_hbox_new(FALSE, 0);
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0); // gtk_hbox_new(FALSE, 0);
 	label = gtk_label_new(_("Terminal"));
 	configure_widgets.OPEN_TERMINAL = gtk_entry_new();
 	gtk_entry_set_text(GTK_ENTRY(configure_widgets.OPEN_TERMINAL), CONFIG_OPEN_TERMINAL);
@@ -2171,7 +2183,7 @@ plugin_configure(GtkDialog *dialog)
 	gtk_box_pack_start(GTK_BOX(hbox), configure_widgets.OPEN_TERMINAL, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 6);
 
-	hbox = gtk_box_new(FALSE,GTK_ORIENTATION_HORIZONTAL); // gtk_hbox_new(FALSE, 0);
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0); // gtk_hbox_new(FALSE, 0);
 	label = gtk_label_new(_("Toolbar"));
 	configure_widgets.SHOW_BARS = gtk_combo_box_text_new();
 	gtk_combo_box_text_append_text( GTK_COMBO_BOX_TEXT(configure_widgets.SHOW_BARS), _("Hidden"));
@@ -2184,7 +2196,7 @@ plugin_configure(GtkDialog *dialog)
 		_("If position is changed, the option require plugin restart."));
 	gtk_combo_box_set_active(GTK_COMBO_BOX(configure_widgets.SHOW_BARS), CONFIG_SHOW_BARS);
 
-	hbox = gtk_box_new(FALSE,GTK_ORIENTATION_HORIZONTAL); // gtk_hbox_new(FALSE, 0);
+	hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0); // gtk_hbox_new(FALSE, 0);
 	label = gtk_label_new(_("Show icons"));
 	configure_widgets.SHOW_ICONS = gtk_combo_box_text_new();
 	gtk_combo_box_text_append_text( GTK_COMBO_BOX_TEXT(configure_widgets.SHOW_ICONS), _("None"));
@@ -2316,7 +2328,7 @@ project_open_cb(G_GNUC_UNUSED GObject *obj, G_GNUC_UNUSED GKeyFile *config, G_GN
 	gchar *uri;
 
 	uri = get_default_dir();
-	treebrowser_chroot(uri);
+	tvctreebrowser_chroot(uri);
 	g_free(uri);
 }
 
@@ -2361,13 +2373,13 @@ plugin_init(GeanyData *data)
 	GeanyKeyGroup *key_group;
 
 	CONFIG_FILE = g_strconcat(geany->app->configdir, G_DIR_SEPARATOR_S, "plugins", G_DIR_SEPARATOR_S,
-		"treebrowser", G_DIR_SEPARATOR_S, "treebrowser.conf", NULL);
+		"tvctreebrowser", G_DIR_SEPARATOR_S, "tvctreebrowser.conf", NULL);
 
 	flag_on_expand_refresh = FALSE;
 
 	load_settings();
 	create_sidebar();
-	treebrowser_chroot(get_default_dir());
+	tvctreebrowser_chroot(get_default_dir());
 
 	/* setup keybindings */
 	key_group = plugin_set_key_group(geany_plugin, "file_browser", KB_COUNT, NULL);

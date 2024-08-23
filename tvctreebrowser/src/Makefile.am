@@ -3,7 +3,10 @@ plugin = tvctreebrowser
 
 geanyplugins_LTLIBRARIES = tvctreebrowser.la
 
-tvctreebrowser_la_SOURCES = tvctreebrowser.c
+tvctreebrowser_la_SOURCES = tvctreebrowser.c \
+							tvctreebrowser.h \
+							tvcaddition.c \
+							tvcaddition.h
 tvctreebrowser_la_CPPFLAGS = $(AM_CPPFLAGS) -DG_LOG_DOMAIN=\"TVCTreeBrowser\"
 tvctreebrowser_la_CFLAGS = $(AM_CFLAGS) $(GIO_CFLAGS) \
 	-I$(top_srcdir)/utils/src
