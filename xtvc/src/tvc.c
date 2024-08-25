@@ -39,9 +39,9 @@ GeanyData	*geany_data;
 PLUGIN_VERSION_CHECK(224)
 
 PLUGIN_SET_TRANSLATABLE_INFO(LOCALEDIR, GETTEXT_PACKAGE,
-	_("xTVC"), _("tvc tvc."
-	"\nWould you like to help"
-	" ?"),
+	_("TVCX"), _("Plugin helping to check input file,"
+	"\ncalculate inline, "
+	""),
 	"0.0.1", "")
 
 /* Keybinding(s) */
@@ -52,9 +52,6 @@ enum
 	BRANCHES_INPUT_KB,
 	PERCENT_OF_RATEDSPEED_KB,
 	SCANIADAMPER_KB,
-	CALCULATEN_KB,
-	CALCULATEY_KB,
-	CALCULATEX_KB,
 	CALCULATE0_KB,
 	CALCULATE1_KB,
 	CALCULATE2_KB,
@@ -68,15 +65,6 @@ enum
 	CALCULATE10_KB,
 	COUNT_KB
 };
-
-// static GtkWidget *main_menu_item = NULL;
-
-#define sci_point_x_from_position(sci, position) \
-	scintilla_send_message(sci, SCI_POINTXFROMPOSITION, 0, position)
-#define sci_get_pos_at_line_sel_start(sci, line) \
-	scintilla_send_message(sci, SCI_GETLINESELSTARTPOSITION, line, 0)
-
-// G_GNUC_UNUSED GtkMenuItem *menuitem, G_GNUC_UNUSED gpointer gdata
 
 static void on_calculateX(int Stellen)
 {
@@ -94,13 +82,10 @@ static void on_calculateX(int Stellen)
 	gint selection_end;
 	if (doc && !doc->readonly)
 	{
+		// einlesen des selektierten bereichs 
 		ScintillaObject *sci = doc->editor->sci;
 		f_content = sci_get_selection_contents(doc->editor->sci);
 
-		// TODO: hier weiter machen
-		// Gesamtanzahl der Modellzeilen
-		reti01 = regcomp(&regex01, "([0-9]*([.][0-9]*)?)(R|G)([0-9]{2,3})", REG_EXTENDED | REG_ICASE);
-		reti02 = regcomp(&regex02, "([0-9]*([.][0-9]*)?)(S|S)([0-9]{2,3})", REG_EXTENDED | REG_ICASE);
 		/*
 		rubber:
 		Pkv*(110-tu)/80
@@ -112,7 +97,9 @@ static void on_calculateX(int Stellen)
 		silicone
 		L=1 M=0.75 C=0.62
 		*/
-		fflush(stdout);
+		reti01 = regcomp(&regex01, "([0-9]*([.][0-9]*)?)(R|G)([0-9]{2,3})", REG_EXTENDED | REG_ICASE);
+		reti02 = regcomp(&regex02, "([0-9]*([.][0-9]*)?)(S|S)([0-9]{2,3})", REG_EXTENDED | REG_ICASE);
+	
 		if ( reti01 | reti02 ) {
 			ui_set_statusbar(TRUE, "Could not compile Temp regex");
 			//fprintf(stderr, "Could not compile regex\n");
@@ -120,49 +107,43 @@ static void on_calculateX(int Stellen)
 		}
 
 		reti03 = regexec(&regex01, f_content, maxGroups, groupArray, 0);
-		 	if (!reti03) {
-				char sourcecopy[strlen(f_content)+1];
-				strcpy(sourcecopy, f_content);
-				sourcecopy[groupArray[1].rm_eo] = 0;
-				Pkv30 = atof(sourcecopy + groupArray[1].rm_so);
-				//ui_set_statusbar(TRUE, "%3f", Pkv30);
-				
-				char sourcecopy2[strlen(f_content)+1];
-				strcpy(sourcecopy2, f_content);
-				sourcecopy2[groupArray[4].rm_eo] = 0;
-				Pkvtemp = atof(sourcecopy2 + groupArray[4].rm_so);
+		if (!reti03) {
+			char sourcecopy[strlen(f_content)+1];
+			strcpy(sourcecopy, f_content);
+			sourcecopy[groupArray[1].rm_eo] = 0;
+			Pkv30 = atof(sourcecopy + groupArray[1].rm_so);
+			
+			char sourcecopy2[strlen(f_content)+1];
+			strcpy(sourcecopy2, f_content);
+			sourcecopy2[groupArray[4].rm_eo] = 0;
+			Pkvtemp = atof(sourcecopy2 + groupArray[4].rm_so);
 
-				//ui_set_statusbar(TRUE, "%03f", Pkvtemp);
-				Pkvresult = Pkv30*(110.0-Pkvtemp)/80.0;
-				//strcpy(systemanz,sourcecopy + groupArray[2].rm_so);
-				ui_set_statusbar(TRUE,"%.3f*(110-%.3f)/80 -> %.3f", Pkv30, Pkvtemp ,Pkvresult);
-				//g_snprintf(f_content_tmp, 30,"%.3f*(110.0-%.3f)/80.0", Pkv30, Pkvtemp);
-				//return 0;
-			}
-		
+			Pkvresult = Pkv30*(110.0-Pkvtemp)/80.0;
+			ui_set_statusbar(TRUE,"%.3f*(110-%.3f)/80 -> %.3f", Pkv30, Pkvtemp ,Pkvresult);
+		}
+	
 		reti04 = regexec(&regex02, f_content, maxGroups, groupArray, 0);
-		 	if (!reti04) {
-				char sourcecopy[strlen(f_content)+1];
-				strcpy(sourcecopy, f_content);
-				sourcecopy[groupArray[1].rm_eo] = 0;
-				Pkv30 = atof(sourcecopy + groupArray[1].rm_so);
-				//ui_set_statusbar(TRUE, "%3f", Pkv30);
-				
-				char sourcecopy2[strlen(f_content)+1];
-				strcpy(sourcecopy2, f_content);
-				sourcecopy2[groupArray[4].rm_eo] = 0;
-				Pkvtemp = atof(sourcecopy2 + groupArray[4].rm_so);
+		if (!reti04) {
+			char sourcecopy[strlen(f_content)+1];
+			strcpy(sourcecopy, f_content);
+			sourcecopy[groupArray[1].rm_eo] = 0;
+			Pkv30 = atof(sourcecopy + groupArray[1].rm_so);
+			
+			char sourcecopy2[strlen(f_content)+1];
+			strcpy(sourcecopy2, f_content);
+			sourcecopy2[groupArray[4].rm_eo] = 0;
+			Pkvtemp = atof(sourcecopy2 + groupArray[4].rm_so);
 
-				//ui_set_statusbar(TRUE, "%03f", Pkvtemp);
-				Pkvresult = Pkv30*(150.0-Pkvtemp)/120.0;
-				//strcpy(systemanz,sourcecopy + groupArray[2].rm_so);
-				ui_set_statusbar(TRUE,"%.3f*(150-%03f)/120 -> %.3f", Pkv30, Pkvtemp ,Pkvresult);
-				//g_snprintf(f_content_tmp, 30,"%.3f*(150.0-%.3f)/120.0", Pkv30, Pkvtemp); 
-				//return 0;
-			}
+			Pkvresult = Pkv30*(150.0-Pkvtemp)/120.0;
+			ui_set_statusbar(TRUE,"%.3f*(150-%.3f)/120 -> %.3f", Pkv30, Pkvtemp ,Pkvresult);
+		}
 		regfree(&regex01);
 		regfree(&regex02);
 
+
+		/*
+		Falls keine Temperaturfaktorberechnung dann normale berechnung durchfuehren
+		*/
 		if ((!reti03) || (!reti04)){
 			b = Pkvresult;
 			error = 0;
@@ -175,7 +156,7 @@ static void on_calculateX(int Stellen)
 			switch (Stellen)
 			{
 				case 0:
-					sprintf(buf, "%.10Lf", b);
+					sprintf(buf, "%.0Lf", b);
 					break;
 				case 1:
 					sprintf(buf, "%.1Lf", b);
@@ -210,7 +191,7 @@ static void on_calculateX(int Stellen)
 			}
 			selection_end = sci_get_selection_end(sci);
 			sci_insert_text(sci, selection_end, buf);
-			ui_set_statusbar(TRUE, "result: %Lf", b);
+			ui_set_statusbar(TRUE, "result: %Lf", buf);
 			sci_set_current_position (sci, selection_end, TRUE);
 			
 			clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
@@ -220,7 +201,7 @@ static void on_calculateX(int Stellen)
 		}		
 	}
 }
-
+/*
 static void on_calculate4()
 {
 	GeanyDocument *doc = document_get_current();
@@ -275,11 +256,8 @@ static void on_calculaten()
 		
 	}
 }
+*/
 
-static void on_calculateY()
-{
-	on_calculateX(6);
-}
 
 static void on_calculateY1()
 {
@@ -350,7 +328,7 @@ static void on_tvc_check()
 	regmatch_t groupArray[maxGroups];
 	char systemanz[5];
 
-	int dampmodel=0,dampdefine=0,systemline=0,gearmeshes=0,gearmeshdefs=0;
+	int dampmodel=0, dampdefine=0, systemline=0, gearmeshes=0, gearmeshdefs=0;
 	int AnzahlModelLines=0, zerosnotfours=0;
 	
 	regex_t regex01,regex02,regex03,regex04,regex05,regex06,regex07,regex08,regex09,regex10,regex11,regex12,regex13;
@@ -390,7 +368,6 @@ static void on_tvc_check()
 
 	// wenn steifigkeit 0 oder 0.0 dann muss element in der zeile sein
 	reti11 = regcomp(&regex12, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)) [0]+([.][0]*)* *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)) ([0-3]|[5-9])((\n)*.*)", REG_EXTENDED);
-   
    
 	//reti7 = regcomp(&regex7, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 5((\n)*.*)", REG_EXTENDED); 2510 R1 R2
 	
@@ -528,17 +505,18 @@ static void on_tvc_check()
 static void on_branches_check()
 { 
 	GeanyDocument *doc = document_get_current();
-
 	ScintillaObject *sci = doc->editor->sci;
+
 	gint numberoflines = sci_get_line_count(sci);
 
-	regex_t regex01,regex02,regex03;
-	int reti01,reti02,reti03;
-	int id = 0,j = 0;
-	int AnzahlModelLines=0,lastModelLine=1;
-	int modelrow = 1051,branchcount=1; // anzahl der branches, 
+	regex_t regex01, regex02, regex03;
+	int reti01, reti02, reti03;
+	int id = 0, j = 0;
+	int AnzahlModelLines = 0, lastModelLine = 1;
+	int modelrow = 1051, branchcount=1; // anzahl der branches, 
 	int matrix [25][2] = {0};
-	int schalter=0;
+	int schalter = 0;
+	
 	/* Compile regular expression */
 	// normale Zeile im SystemModell 
 	reti01 = regcomp(&regex01, "^([0-9][0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} [0-9]((\n)*.*)", REG_EXTENDED);
@@ -556,13 +534,13 @@ static void on_branches_check()
 	else
 	{
 		// erster Durchlauf um die Gesamtzahl der Modellzeilen zu ermitteln
-		for(gint i=0; i < numberoflines; i=i+1)
+		for(gint i=0; i < numberoflines; i++)
 		{
 			gchar * test = sci_get_line(sci,i);
 			
 			reti01 = regexec(&regex01, test, 0, NULL, 0);
 			if (!reti01) {
-				AnzahlModelLines=AnzahlModelLines+1;
+				AnzahlModelLines++;
 				lastModelLine=i;
 			}
 		}
@@ -571,7 +549,7 @@ static void on_branches_check()
 		int linenumber=1100;
 
 		// zweiter Durchlauf um die Branches zu ermitteln 
-		for(gint i=0; i<numberoflines; i=i+1)
+		for(gint i=0; i<numberoflines; i++)
 		{
 			gchar * test = sci_get_line(sci,i);
 			
@@ -585,7 +563,7 @@ static void on_branches_check()
 						matrix[id][0] = linenumber;
 						schalter=1;
 					}
-					compareLines=compareLines+1;
+					compareLines++;
 
 					gint linelenght = sci_get_line_length(sci, i);
 					gint startofline = sci_get_position_from_line(sci,i);
@@ -613,11 +591,40 @@ static void on_branches_check()
 					schalter=0;
 					//ui_set_statusbar(TRUE, "\t %d",linenumber);
 					linenumber=linenumber+100;
-					branchcount=branchcount+1;
+					branchcount++;
 				}
 			}
 		}
 		matrix[id][1] = linenumber;
+
+		gchar helper[50];
+		int row;
+		gint einfuegezeile=lastModelLine-(AnzahlModelLines+branchcount-1);
+		gint startofline = sci_get_position_from_line(sci,einfuegezeile);
+		if(branchcount == 1){
+			// sprintf(helper,"1050 %d\n", branchcount);
+			sci_insert_text(sci, startofline, "1050 0");
+		}else{
+			sprintf(helper,"1050 %02d \n", branchcount);
+			sci_insert_text(sci, startofline, helper);
+		}
+		
+		for (row=0; row<=24; row++)
+		{
+			if(matrix[row][0]>0)
+			{
+				einfuegezeile=einfuegezeile+1;
+				startofline = sci_get_position_from_line(sci,einfuegezeile);
+				sprintf(helper,"%d %02d %02d\n", modelrow, matrix[row][0]%100, matrix[row][1]%100 );
+				ui_set_statusbar(TRUE, "%s",helper);
+				sci_insert_text(sci, startofline, helper);
+				modelrow=modelrow+1;
+			}
+		}
+
+		fflush(stdout);
+		regfree(&regex02);
+		regfree(&regex01);
 	}
 	/* Free memory allocated to the pattern buffer by regcomp() */
 	
@@ -633,60 +640,28 @@ static void on_branches_check()
 		}
 	}
 	*/
-	// einfuegen der neuen branchabschnittszahlen
-	gchar helper[50];
-	int row;
-	gint einfuegezeile=lastModelLine-(AnzahlModelLines+branchcount-1);
-	gint startofline = sci_get_position_from_line(sci,einfuegezeile);
-	if(branchcount == 1){
-		// sprintf(helper,"1050 %d\n", branchcount);
-		sci_insert_text(sci, startofline, "1050 0");
-	}else{
-		sprintf(helper,"1050 %02d \n", branchcount);
-		sci_insert_text(sci, startofline, helper);
-	}
 	
-	for (row=0; row<24; row++)
-	{
-		if(matrix[row][0]>0)
-		{
-			einfuegezeile=einfuegezeile+1;
-			startofline = sci_get_position_from_line(sci,einfuegezeile);
-			sprintf(helper,"%d %02d %02d\n", modelrow, matrix[row][0]%100, matrix[row][1]%100 );
-		 	ui_set_statusbar(TRUE, "%s",helper);
-			sci_insert_text(sci, startofline, helper);
-			modelrow=modelrow+1;
-		}
-	}
-
-	fflush(stdout);
-	regfree(&regex02);
-	regfree(&regex01);
 }
 
-static void reverse_lines()
-{
-	/*
-		TODO:reverse sorting the selected lines
-	*/
-}
 
 // G_GNUC_UNUSED GtkMenuItem *menuitem, G_GNUC_UNUSED gpointer gdata
 static void percent_of_ratedspeed()
 {
 	GeanyDocument *doc = document_get_current();
+	ScintillaObject *sci = doc->editor->sci;
+
 	GtkClipboard *clipboard, *primary;
 	gchar temptxt[30];
-	ScintillaObject *sci = doc->editor->sci;
 	gint numberoflines = sci_get_line_count(sci);
 
 	size_t maxGroups = 3;
 	regmatch_t groupArray[maxGroups];
 	char * succ;
-	double minspeed=0, maxspeed=0,ratedspeed=1;
+	double minspeed=0, maxspeed=0, ratedspeed=1;
 	regex_t regex01;
 	int reti01;
-	gint lastModelLine=0;
+	gint lastline=0;
+
 	/* Compile regular expression */
 	// normale Zeile im SystemModell 
 	reti01 = regcomp(&regex01, "^3[0-9]{3} *([0-9]+[.]+[0-9]+) *.*\n.*", REG_EXTENDED);
@@ -697,7 +672,7 @@ static void percent_of_ratedspeed()
 		
 		reti01 = regexec(&regex01, test, 0, NULL, 0);
 		if (!reti01) {
-			lastModelLine=i;
+			lastline=i;
 		}
 	}
 
@@ -709,10 +684,10 @@ static void percent_of_ratedspeed()
 		strcpy(sourcecopy, first);
 		sourcecopy[groupArray[1].rm_eo] = 0;
 		strcpy(speed,sourcecopy + groupArray[1].rm_so);
-		maxspeed=strtod(speed,&succ);
+		maxspeed=strtod(speed, &succ);
 	}
 
-	gchar * last = sci_get_line(sci, lastModelLine);
+	gchar * last = sci_get_line(sci, lastline);
 	reti01 = regexec(&regex01, last, maxGroups, groupArray, 0);
 	if (!reti01) {
 		char sourcecopy[strlen(last)+1];
@@ -720,27 +695,21 @@ static void percent_of_ratedspeed()
 		strcpy(sourcecopy, last);
 		sourcecopy[groupArray[1].rm_eo] = 0;
 		strcpy(speed,sourcecopy + groupArray[1].rm_so);
-		minspeed=strtod(speed,&succ);
+		minspeed=strtod(speed, &succ);
 	}
 	gchar * f_content = sci_get_selection_contents(doc->editor->sci);
-	ratedspeed=strtod(f_content,&succ);
+	ratedspeed=strtod(f_content, &succ);
 	
 	if(ratedspeed>0)
 	{
-	ui_set_statusbar(TRUE, "\t%.2f - %.2f", minspeed/ratedspeed, maxspeed/ratedspeed);
+		ui_set_statusbar(TRUE, "\t%.2f - %.2f", minspeed/ratedspeed, maxspeed/ratedspeed);
 
-	sprintf(temptxt,"%.2f - %.2f", minspeed/ratedspeed, maxspeed/ratedspeed);
+		sprintf(temptxt,"%.2f - %.2f", minspeed/ratedspeed, maxspeed/ratedspeed);
 
-	clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
-	primary = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
-	gtk_clipboard_set_text(clipboard,temptxt,sizeof(temptxt));
-	gtk_clipboard_set_text(primary, temptxt,sizeof(temptxt));
-	/*
-	printf("%f\n", maxspeed);
-	printf("%f\n", minspeed);
-	printf("%f", ratedspeed);
-	fflush(stdout);
-	*/
+		clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+		primary = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
+		gtk_clipboard_set_text(clipboard, temptxt, sizeof(temptxt));
+		gtk_clipboard_set_text(primary, temptxt, sizeof(temptxt));
 	}
 	regfree(&regex01);
 }
@@ -810,20 +779,18 @@ static void on_tools_show(G_GNUC_UNUSED GtkMenuItem *menuitem, G_GNUC_UNUSED gpo
 {
 	gtk_widget_set_sensitive(main_menu_item, TRUE); //can_insert_numbers());
 }
-*/
+
 
 
 void plugin_help(void)
 {
 	GtkWidget *dialog,*label,*scroll;
 
-	/* create dialog box */
 	dialog=gtk_dialog_new_with_buttons(_("Numbered Bookmarks help"),
 	                                   GTK_WINDOW(geany->main_widgets->window),
 	                                   GTK_DIALOG_DESTROY_WITH_PARENT,
 	                                   GTK_STOCK_OK,GTK_RESPONSE_ACCEPT,NULL);
 
-	/* create label */
 	label=gtk_label_new(
 _("This Plugin implements Numbered Bookmarks in Geany, as well as remembering the state of folds, \
 and positions of standard non-numbered bookmarks when a file is saved.\n\n"
@@ -832,7 +799,7 @@ and positions of standard non-numbered bookmarks when a file is saved.\n\n"
 	gtk_label_set_line_wrap(GTK_LABEL(label),TRUE);
 	gtk_widget_show(label);
 
-	/* create scrolled window to display label */
+
 	scroll=gtk_scrolled_window_new(NULL,NULL);
 	gtk_scrolled_window_set_policy((GtkScrolledWindow*)scroll,GTK_POLICY_NEVER,
 	                               GTK_POLICY_AUTOMATIC);
@@ -850,15 +817,14 @@ and positions of standard non-numbered bookmarks when a file is saved.\n\n"
 	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))),scroll);
 	gtk_widget_show_all(dialog);
 
-	/* set dialog size (leave width default) */
 	gtk_widget_set_size_request(dialog,-1,600);
 
-	/* display the dialog */
+
 	gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);
 }
 
-
+*/
 
 
 void plugin_init(G_GNUC_UNUSED GeanyData *data)
@@ -866,43 +832,23 @@ void plugin_init(G_GNUC_UNUSED GeanyData *data)
 	GeanyKeyGroup *plugin_key_group;
 	setlocale(LC_NUMERIC, "C");
 
-	plugin_key_group = plugin_set_key_group(geany_plugin, "TVC_group", COUNT_KB, NULL);
+	plugin_key_group = plugin_set_key_group(geany_plugin, "TVCX_Group", COUNT_KB, NULL);
 
-	//plugin_key_group = plugin_set_key_group(geany_plugin, "insert_numbers", COUNT_KB, NULL);
-
-	//plugin_key_group = plugin_set_key_group(geany_plugin, "insert_numbers", COUNT_KB, NULL);
 	/*
 	main_menu_item = gtk_menu_item_new_with_mnemonic(_("test _TVC..."));
 	gtk_widget_show(main_menu_item);
-	main_menu_item2 = gtk_menu_item_new_with_mnemonic(_("regex..."));
-	gtk_widget_show(main_menu_item2);
-	main_menu_item3 = gtk_menu_item_new_with_mnemonic(_("regex01..."));
-	//gtk_widget_show(main_menu_item2);
 
 	gtk_container_add(GTK_CONTAINER(geany->main_widgets->tools_menu), main_menu_item);
-	gtk_container_add(GTK_CONTAINER(geany->main_widgets->tools_menu), main_menu_item2);
 
 	g_signal_connect(main_menu_item, "activate", G_CALLBACK(on_calculate4),
 		NULL);
-	g_signal_connect(main_menu_item2, "activate", G_CALLBACK(on_tvc_check),
-		NULL);
-	g_signal_connect(main_menu_item3, "activate", G_CALLBACK(on_branches_check),
-		NULL);
 	*/
-	//keybindings_set_item(plugin_key_group, CALCULATE4_KB, on_insert_numbers_key,
-	//	0, 0, "test_tvc", _("test TVC..."), main_menu_item);
-
-	keybindings_set_item(plugin_key_group, CALCULATEfast_KB, on_calculate4,
-		0, 0, "calculate4", _("calculate4"), NULL);
 
 	keybindings_set_item(plugin_key_group, CHECK_INPUT_KB, on_tvc_check,
 		0, 0, "check input", _("checkinput"), NULL);
 
 	keybindings_set_item(plugin_key_group, BRANCHES_INPUT_KB, on_branches_check,
 		0, 0, "branches", _("branchesinput"), NULL);
-
-	keybindings_set_item(plugin_key_group, CALCULATEN_KB, on_calculateY,
-		0, 0, "calculatey", _("calculatey"), NULL);
 
 
 	keybindings_set_item(plugin_key_group, CALCULATE0_KB, on_calculateY0,
