@@ -44,6 +44,20 @@ PLUGIN_SET_TRANSLATABLE_INFO(LOCALEDIR, GETTEXT_PACKAGE,
 	""),
 	"0.0.1", "")
 
+static int AnzahlModelLines=0;
+static int springdampmodel=0;
+static int springdampdefined=0;
+static int gearmeshesmodel=0;
+static int gearmeshesdefined=0;
+static int systemlinestoevaluatemodel=0;
+static int systemlinestoevaluatedefined=0;
+static int minrpmofenginedefined=0;
+static int hookejointsmodel=0;
+static int hookejointsdefined=0;
+static int zerostiffnessesinmodel=0;
+
+
+
 /* Keybinding(s) */
 enum
 {
@@ -74,7 +88,7 @@ static void on_calculateX(int Stellen)
 	int error;
 	size_t maxGroups = 5;
 	regmatch_t groupArray[maxGroups];
-	regex_t regex01,regex02,regex03;
+	regex_t regex01,regex02;
 	int reti01,reti02,reti03,reti04;
 	float Pkv30, Pkvtemp, Pkvresult;	
 	long double b=0.0;
@@ -191,7 +205,7 @@ static void on_calculateX(int Stellen)
 			}
 			selection_end = sci_get_selection_end(sci);
 			sci_insert_text(sci, selection_end, buf);
-			ui_set_statusbar(TRUE, "result: %Lf", buf);
+			ui_set_statusbar(TRUE, "result: %s", buf);
 			sci_set_current_position (sci, selection_end, TRUE);
 			
 			clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
@@ -314,143 +328,193 @@ static void on_calculateY0()
 	on_calculateX(0);
 }
 
-
-//G_GNUC_UNUSED GtkMenuItem *menuitem, G_GNUC_UNUSED	gpointer gdata
-static void on_tvc_check()
+static void reset_all_countingvalues()
 {
-	GeanyDocument *doc = document_get_current();
-	gchar *my_string;
-	// ScintillaObject *sci = doc->editor->sci;
-	gint len = sci_get_length(doc->editor->sci) + 1;
-	my_string = sci_get_contents(doc->editor->sci, len);
+	AnzahlModelLines=0;
+	springdampmodel=0;
+	springdampdefined=0;
+	gearmeshesmodel=0;
+	gearmeshesdefined=0;
+	systemlinestoevaluatemodel=0;
+	systemlinestoevaluatedefined=0;
+	minrpmofenginedefined=0;
+	hookejointsmodel=0;
+	hookejointsdefined=0;
+	zerostiffnessesinmodel=0;
+
+}
+
+static void count_all_modellines(char * tempStr)
+{
+	regex_t regex;
+	int reti;
+
+	reti = regcomp(&regex, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} [0-9]((\n)*.*)", REG_EXTENDED);
+
+	reti = regexec(&regex, tempStr, 0, NULL, 0);
+	if (!reti) {
+		AnzahlModelLines++;
+	}
+	regfree(&regex);
+}
+
+static void count_all_springdamperlines(char * tempStr)
+{
+	regex_t regexm, regexd;
+	int retim,retid;
+	
+	//element 2. 
+    retim = regcomp(&regexm, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 2((\n)*.*)", REG_EXTENDED);
+    retid = regcomp(&regexd, "^22[0-9][0-9] .*", REG_EXTENDED); // liest nicht immer alle 
+
+	retim = regexec(&regexm, tempStr, 0, NULL, 0);
+	if (!retim) {
+		springdampmodel++;
+	}
+
+	retid = regexec(&regexd, tempStr, 0, NULL, 0);
+	if (!retid) {
+		springdampdefined++;
+	}
+
+	regfree(&regexm);
+	regfree(&regexd);
+}
+
+static void count_all_gearmeshlines(char * tempStr)
+{
+	regex_t regexm, regexd;
+	int retim,retid;
+	
+	//Gear Meshes
+	retim = regcomp(&regexm, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 10(.*)", REG_EXTENDED);
+    retid = regcomp(&regexd, "^410[0-9] .*([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
+
+	retim = regexec(&regexm, tempStr, 0, NULL, 0);
+	if (!retim) {
+		gearmeshesmodel++;
+	}
+	retid = regexec(&regexd, tempStr, 0, NULL, 0);
+	if (!retid) {
+		gearmeshesdefined++;
+	}
+
+	regfree(&regexm);
+	regfree(&regexd);
+}
+
+static void count_all_hookejointslines(char * tempStr)
+{
+	regex_t regexm, regexd;
+	int retim,retid;
+	
+	//Hooke
+	retim = regcomp(&regexm, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 12(.*)", REG_EXTENDED);
+    retid = regcomp(&regexd, "42[0-9][0-9] *([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
+
+	retim = regexec(&regexm, tempStr, 0, NULL, 0);
+	if (!retim) {
+		hookejointsmodel++;
+	}
+	retid = regexec(&regexd, tempStr, 0, NULL, 0);
+	if (!retid) {
+		hookejointsdefined++;
+	}
+
+	regfree(&regexm);
+	regfree(&regexd);
+}
+
+static void count_all_pointstoevaluatelines(char * tempStr)
+{
+	regex_t regexm, regexd;
+	int retim,retid;
 
 	size_t maxGroups = 3;
 	regmatch_t groupArray[maxGroups];
 	char systemanz[5];
 
-	int dampmodel=0, dampdefine=0, systemline=0, gearmeshes=0, gearmeshdefs=0;
-	int AnzahlModelLines=0, zerosnotfours=0;
+	//Systemstellen auszuwerten
+	retid = regcomp(&regexd, "^3100 * '(systems|SYSTEMS)' *([0-9]+).*", REG_EXTENDED); // issue: erkennt die nummer nicht
+    retim = regcomp(&regexm, "^31[0-9][0-9] *[0-9]{1,4} .*", REG_EXTENDED);
 	
-	regex_t regex01,regex02,regex03,regex04,regex05,regex06,regex07,regex08,regex09,regex10,regex11,regex12,regex13;
-	int reti01,reti02,reti03,reti3,reti4,reti5,reti6,reti7,reti8,reti9,reti10,reti11,reti12;	
+	retid = regexec(&regexd, tempStr, maxGroups, groupArray, 0);
+	if (!retid) {
+		char sourcecopy[strlen(tempStr)+1];
+		strcpy(sourcecopy, tempStr);
+		sourcecopy[groupArray[2].rm_eo] = 0;
+		strcpy(systemanz,sourcecopy + groupArray[2].rm_so);
+		systemlinestoevaluatedefined = g_ascii_strtoll(systemanz,NULL,10);
+	}
+	
+	retim = regexec(&regexm, tempStr, 0, NULL, 0);
+	if (!retim) {
+		systemlinestoevaluatemodel++;
+	}
 
-	/* Compile regular expression */
+	regfree(&regexm);
+	regfree(&regexd);
+}
+
+static void minimal_rpm_engine(char * tempStr)
+{
+	regex_t regexm;
+	int retim;
+
+	// ist die minimaldrehzahl im modell?
+	retim = regcomp(&regexm, "^(211[0-9]) *([+-]?([0-9]+[.])+[0-9]+ *){2} *[0-9] *[0-9] *([+-]?([0-9]+[.])+[0-9]+ *){2} *((\n).*)", REG_EXTENDED);
+	
+	retim = regexec(&regexm, tempStr, 0, NULL, 0);
+	if (!retim) {
+		minrpmofenginedefined=1;
+	}
+
+	regfree(&regexm);
+}
+
+static void count_all_zerostiffnesses(char * tempStr)
+{
+	regex_t regexm;
+	int retim;
+
+	// wenn steifigkeit 0 oder 0.0 dann muss element in der zeile sein
+	retim = regcomp(&regexm, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)) [0]+([.][0]*)* *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)) ([0-3]|[5-9])((\n)*.*)", REG_EXTENDED);
+   
+	retim = regexec(&regexm, tempStr, 0, NULL, 0);
+	if (!retim) {
+		zerostiffnessesinmodel++;
+	}
+
+	regfree(&regexm);
+}
+
+
+static void on_tvc_check()
+{
+	// gchar *my_string;
+	GeanyDocument *doc = document_get_current();
+	ScintillaObject *sci = doc->editor->sci;
+	gint len = sci_get_length(sci) + 1;
+	gchar *my_string = sci_get_contents(sci, len);
+
+	reset_all_countingvalues();
+
     const char * curLine = my_string;
 	
-	// Gesamtanzahl der Modellzeilen 
-	reti01 = regcomp(&regex01, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} [0-9]((\n)*.*)", REG_EXTENDED);
-	
-	//element 2. 
-    reti02 = regcomp(&regex02, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 2((\n)*.*)", REG_EXTENDED);
-    reti03 = regcomp(&regex03, "^22[0-9][0-9] .*", REG_EXTENDED);
-	
-	//Systemstellen auszuwerten
-	reti3 = regcomp(&regex04, "^3100 * '(systems|SYSTEMS)' *([0-9]+).*", REG_EXTENDED); // issue: erkennt die nummer nicht
-    reti4 = regcomp(&regex05, "^31[0-9][0-9] *[0-9]{1,4} .*", REG_EXTENDED);
-	
-	//Hooke
-	reti5 = regcomp(&regex06, "^99999999", REG_EXTENDED);	// ?? verstehe ich hier gerade nicht
-    reti6 = regcomp(&regex07, "42[1-9][0-9] *([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
-
-	//Gear Meshes
-	reti7 = regcomp(&regex08, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 10((\n)*.*)", REG_EXTENDED);
-    reti8 = regcomp(&regex09, "^410[0-9] .*([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
-	
-	//engine min drehzahl 2110 260.0 385.0 4 1 1920.0 750.0 500.0     " *(([+-]?([0-9]+[.])+[0-9]+ *))" negative lookahead *(?!([+-]?([0-9]+[.])+[0-9]+))
-	reti9 = regcomp(&regex10, "^(211[0-9]) *([+-]?([0-9]+[.])+[0-9]+ *){2} *[0-9] *[0-9] *([+-]?([0-9]+[.])+[0-9]+ *){2} *((\n).*)", REG_EXTENDED);
-	
 	//powercurves number of columns 
-    reti10 = regcomp(&regex11, "^40[1-9][0-9] .*([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
+    // reti10 = regcomp(&regex11, "^40[1-9][0-9] .*([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
 	
 	// wenn eine zeile 5 dann auch 2510 definition
 
 	// wenn eine zeile 15 dann auch 4150 definition, wenn zwei, dann mehr spalten
 
-	// wenn steifigkeit 0 oder 0.0 dann muss element in der zeile sein
-	reti11 = regcomp(&regex12, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)) [0]+([.][0]*)* *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)) ([0-3]|[5-9])((\n)*.*)", REG_EXTENDED);
-   
-	//reti7 = regcomp(&regex7, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 5((\n)*.*)", REG_EXTENDED); 2510 R1 R2
-	
-	//reti7 = regcomp(&regex7, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 15((\n)*.*)", REG_EXTENDED); 4150  ...
 	/*
 		first counting the elemente 15 elements
 		then checking if really 10 inputlines for the damper are there
 		?? checking if damperdata inside / 
 	*/
-    reti12 = regcomp(&regex13, "^410[0-9] .*([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
 
-	if ( reti01 || reti02 || reti03 || reti3 || reti4 || reti5 || reti6) {
-		fprintf(stderr, "Could not compile regex\n");
-		exit(1);
-	}
-	if (reti9 || reti10 || reti8 || reti7 || reti11 || reti12) {
-		fprintf(stderr, "Could not compile regex ab 7\n");
-		exit(1);
-	}
-	ui_set_statusbar(TRUE, "\n\t\t ----Modellcheck :----");
-	while(curLine)
-    {
-      	const char * nextLine = strchr(curLine, '\n');
-      	int curLineLen = nextLine ? (nextLine-curLine) : strlen(curLine);
-      	char * tempStr = (char *) malloc(curLineLen+1);
-		if (tempStr)
-      	{
-        	memcpy(tempStr, curLine, curLineLen);
-         	tempStr[curLineLen] = '\0';  // NUL-terminate!
-
-			// Gesamtanzahl der Modellzeilen
-			reti01 = regexec(&regex01, tempStr, 0, NULL, 0);
-			if (!reti01) {
-				AnzahlModelLines=AnzahlModelLines+1;
-			}
-			
-			// Anzahl von damping lines im Modell
-		 	reti02 = regexec(&regex02, tempStr, 0, NULL, 0);
-		 	if (!reti02) {
-				dampmodel=dampmodel+1;
-			}
-			// Anzahl von damping lines in den Definitionen
-			reti03 = regexec(&regex03, tempStr, 0, NULL, 0);
-		 	if (!reti03) {
-				dampdefine=dampdefine+1;
-			}
-
-			reti3 = regexec(&regex04, tempStr, maxGroups, groupArray, 0);
-		 	if (!reti3) {
-				char sourcecopy[strlen(tempStr)+1];
-				strcpy(sourcecopy, tempStr);
-				sourcecopy[groupArray[2].rm_eo] = 0;
-				strcpy(systemanz,sourcecopy + groupArray[2].rm_so);
-				// printf("string: %s  rest: %s",sourcecopy, systemanz);
-				// fflush(stdout);
-			}
-			reti4 = regexec(&regex05, tempStr, 0, NULL, 0);
-		 	if (!reti4) {
-				systemline=systemline+1;
-			}
-			
-			reti7 = regexec(&regex08, tempStr, 0, NULL, 0);
-		 	if (!reti7) {
-				gearmeshes=gearmeshes+1;
-			}
-			reti8 = regexec(&regex09, tempStr, 0, NULL, 0);
-		 	if (!reti8) {
-				gearmeshdefs=gearmeshdefs+1;
-			}
-
-			reti9 = regexec(&regex10, tempStr, 0, NULL, 0);
-		 	if (!reti9) {
-				ui_set_statusbar(TRUE, "\t\t---Engine has no minimal rpm");
-			}
-			reti11 = regexec(&regex12, tempStr, 0, NULL, 0);
-		 	if (!reti11) {
-				zerosnotfours=zerosnotfours+1;
-			}
-        	free(tempStr);
-      	}
-      	else printf("malloc() failed!?\n");
-		curLine = nextLine ? (nextLine+1) : NULL;
-	}
+    // reti12 = regcomp(&regex13, "^410[0-9] .*([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
 	/* Execute regular expression */
 	/*
 	- if stiffness == 0.0 or 0, dann muss es auch element 4 sein
@@ -462,58 +526,97 @@ static void on_tvc_check()
 	- if 5 then there should be a definition
 	- if 6 also check for definition
 	*/
-	
+		
+	while(curLine)
+    {
+      	const char * nextLine = strchr(curLine, '\n');
+      	int curLineLen = nextLine ? (nextLine-curLine) : strlen(curLine);
+      	char * tempStr = (char *) malloc(curLineLen+1);
+		if (tempStr)
+      	{
+        	memcpy(tempStr, curLine, curLineLen);
+         	tempStr[curLineLen] = '\0';  // NUL-terminate!
+
+			// Zaehlen der Gesamtanzahl der Modellzeilen
+			count_all_modellines(tempStr);
+			
+			// Anzahl von damping lines im Modell
+			count_all_springdamperlines(tempStr);
+
+			// Anzahl der Auszuwertenden Systemstellen
+			count_all_pointstoevaluatelines(tempStr);
+
+			// Anzahl der Gear-meshes checken
+			count_all_gearmeshlines(tempStr);
+
+			// hat das model eine minimaldrehzahl 
+			minimal_rpm_engine(tempStr);
+
+			count_all_zerostiffnesses(tempStr);
+
+			count_all_hookejointslines(tempStr);
+        	
+			free(tempStr);
+      	}
+      	else printf("malloc() failed!?\n");
+		curLine = nextLine ? (nextLine+1) : NULL;
+	}
+
+	/*
+	falls ausgabe nur in der statuszeile stattfindne soll gut
+	flag in der config einbauen, falls ausgabe auch in einem dialog stattfinden soll, oder anderer shortcut?
+	*/
+
+	ui_set_statusbar(TRUE, "\n\t\t ---- Modellcheck :----");
 	ui_set_statusbar(TRUE, "\t Gesamtanzahl der Elemente vom Model \t %d", AnzahlModelLines);
 
-	ui_set_statusbar(TRUE, "\t\t ----Damping Element 2:----");
-	ui_set_statusbar(TRUE, "\t im Modell \t %d", dampmodel);
-	ui_set_statusbar(TRUE, "\t definiert \t %d ", dampdefine);
+	ui_set_statusbar(TRUE, "\t\t ---- 2201 Damping Element (Elementtype 2): ----");
+	ui_set_statusbar(TRUE, "\t im Modell \t %d", springdampmodel);
+	ui_set_statusbar(TRUE, "\t definiert \t %d ", springdampdefined);
 
-
-	ui_set_statusbar(TRUE, "\t\t ----3100 Systemstellen:----");
-	ui_set_statusbar(TRUE, "\t auszuwerten \t %s ",systemanz);
-	ui_set_statusbar(TRUE, "\t definiert \t %d ",systemline);
-
-	if(gearmeshes>0 || gearmeshdefs>0) //spaeter if gearmeshes == gearmeshdefs, nur kurze ausgabe
+	if(gearmeshesmodel>0 || gearmeshesdefined>0)
 	{
-		ui_set_statusbar(TRUE, "\t\t ----Gear-Meshes 10:----");
-		ui_set_statusbar(TRUE, "\t im Modell \t %d ",gearmeshes);
-		ui_set_statusbar(TRUE, "\t definiert \t %d ",gearmeshdefs);
-	}
-	if(zerosnotfours)
-	{
-		ui_set_statusbar(TRUE, "\t\t-  %d-mal 0 Steifigkeit die nicht 4Elemente sind",zerosnotfours);
+		ui_set_statusbar(TRUE, "\t\t ---- 4101 Gear-Meshes (Elementtype 10): ----");
+		ui_set_statusbar(TRUE, "\t im Modell \t %d ", gearmeshesmodel);
+		ui_set_statusbar(TRUE, "\t definiert \t %d ", gearmeshesdefined);
 	}
 
-	/* Free memory allocated to the pattern buffer by regcomp() */
-	regfree(&regex01);
-	regfree(&regex02);
-	regfree(&regex03);
-	regfree(&regex04);
-	regfree(&regex05);
-	regfree(&regex06);
-	regfree(&regex07);
-	regfree(&regex08);
-	regfree(&regex09);
-	regfree(&regex11);
+	if(hookejointsmodel>0 || hookejointsdefined>0)
+	{
+		ui_set_statusbar(TRUE, "\t\t ---- 4201 Hooke's Joints (Elementtype 12): ----");
+		ui_set_statusbar(TRUE, "\t im Modell \t %d ", hookejointsmodel);
+		ui_set_statusbar(TRUE, "\t definiert \t %d ", hookejointsdefined);
+	}
 
+	ui_set_statusbar(TRUE, "\t\t ---- 3100 Systemstellen: ----");
+	ui_set_statusbar(TRUE, "\t auszuwerten \t %d ", systemlinestoevaluatedefined);
+	ui_set_statusbar(TRUE, "\t definiert \t %d ", systemlinestoevaluatemodel);
 
+	if(minrpmofenginedefined)
+	{
+		ui_set_statusbar(TRUE, "\t\t--- Engine has no minimal rpm, please add at the end of line 2110");
+	}
+
+	if(zerostiffnessesinmodel > 0)
+	{
+		ui_set_statusbar(TRUE, "\t\t-  %d-mal 0 Steifigkeit die nicht 4Elemente sind", zerostiffnessesinmodel);
+	}
 
 }
 
-// G_GNUC_UNUSED GtkMenuItem *menuitem, G_GNUC_UNUSED gpointer gdata
-static void on_branches_check()
+
+static void numbering_branches()
 { 
 	GeanyDocument *doc = document_get_current();
 	ScintillaObject *sci = doc->editor->sci;
 
 	gint numberoflines = sci_get_line_count(sci);
 
-	regex_t regex01, regex02, regex03;
-	int reti01, reti02, reti03;
-	int id = 0, j = 0;
-	int AnzahlModelLines = 0, lastModelLine = 1;
-	int modelrow = 1051, branchcount=1; // anzahl der branches, 
+	regex_t regex01, regex02;
+	int reti01, reti02;
+	int id = 0;
+	int Anzahlmodel2Lines = 0, lastModelLine = 1;
+	int modelrow = 1051, branchcount=1;
 	int matrix [25][2] = {0};
 	int schalter = 0;
 	
@@ -522,11 +625,11 @@ static void on_branches_check()
 	reti01 = regcomp(&regex01, "^([0-9][0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} [0-9]((\n)*.*)", REG_EXTENDED);
     // Leerzeile im SystemModell
 	reti02 = regcomp(&regex02, "^[ \t]*\n\0", REG_EXTENDED);
-	reti03 = regcomp(&regex03, "^105[0-9] *[0-9]* *[0-9]((\n)*.*)", REG_EXTENDED);
+	//reti03 = regcomp(&regex03, "^105[0-9] *[0-9]* *[0-9]((\n)*.*)", REG_EXTENDED);
 	
 	matrix[0][0] = 1;
 
-	if (reti01 || reti02 || reti03 ) 
+	if (reti01 || reti02 ) 
 	{
 		fprintf(stderr, "Could not compile regex\n");
 		// exit(1); better ending...not THAT error! :)
@@ -540,7 +643,7 @@ static void on_branches_check()
 			
 			reti01 = regexec(&regex01, test, 0, NULL, 0);
 			if (!reti01) {
-				AnzahlModelLines++;
+				Anzahlmodel2Lines++;
 				lastModelLine=i;
 			}
 		}
@@ -555,7 +658,7 @@ static void on_branches_check()
 			
 			reti01 = regexec(&regex01, test, 0, NULL, 0);
 			if (!reti01) {
-				if(compareLines <= AnzahlModelLines)
+				if(compareLines <= Anzahlmodel2Lines)
 				{
 					linenumber=linenumber+1;
 					if(!schalter)
@@ -584,7 +687,7 @@ static void on_branches_check()
 
 			reti02 = regexec(&regex02, test, 0, NULL, 0);
 			if (!reti02) {
-				if((compareLines < AnzahlModelLines) && (compareLines > 0))
+				if((compareLines < Anzahlmodel2Lines) && (compareLines > 0))
 				{
 					matrix[id][1] = linenumber;
 					id=id+1;
@@ -599,7 +702,7 @@ static void on_branches_check()
 
 		gchar helper[50];
 		int row;
-		gint einfuegezeile=lastModelLine-(AnzahlModelLines+branchcount-1);
+		gint einfuegezeile=lastModelLine-(Anzahlmodel2Lines+branchcount-1);
 		gint startofline = sci_get_position_from_line(sci,einfuegezeile);
 		if(branchcount == 1){
 			// sprintf(helper,"1050 %d\n", branchcount);
@@ -611,14 +714,21 @@ static void on_branches_check()
 		
 		for (row=0; row<=24; row++)
 		{
-			if(matrix[row][0]>0)
+			if(matrix[row][0] > 0)
 			{
-				einfuegezeile=einfuegezeile+1;
-				startofline = sci_get_position_from_line(sci,einfuegezeile);
+				einfuegezeile++;
+				startofline = sci_get_position_from_line(sci, einfuegezeile);
 				sprintf(helper,"%d %02d %02d\n", modelrow, matrix[row][0]%100, matrix[row][1]%100 );
-				ui_set_statusbar(TRUE, "%s",helper);
+				//ui_set_statusbar(TRUE, "%s",helper);
 				sci_insert_text(sci, startofline, helper);
-				modelrow=modelrow+1;
+				modelrow++;
+			}
+			if(row==24){
+				einfuegezeile++;
+				startofline = sci_get_position_from_line(sci, einfuegezeile);
+				sprintf(helper,"\n");
+				//ui_set_statusbar(TRUE, "%s",helper);
+				sci_insert_text(sci, startofline, helper);
 			}
 		}
 
@@ -626,25 +736,12 @@ static void on_branches_check()
 		regfree(&regex02);
 		regfree(&regex01);
 	}
-	/* Free memory allocated to the pattern buffer by regcomp() */
 	
-	// falls ^105x zeilen vorhanden, dann loeschen!
-	/*
-	for(gint i=AnzahlModelLines; i > 0; i=i-1)
-	{
-		gchar * test = sci_get_line(sci,i);
-		
-		reti03 = regexec(&regex03, test, 0, NULL, 0);
-		if (!reti01) {
-			
-		}
-	}
-	*/
 	
 }
 
 
-// G_GNUC_UNUSED GtkMenuItem *menuitem, G_GNUC_UNUSED gpointer gdata
+
 static void percent_of_ratedspeed()
 {
 	GeanyDocument *doc = document_get_current();
@@ -847,7 +944,7 @@ void plugin_init(G_GNUC_UNUSED GeanyData *data)
 	keybindings_set_item(plugin_key_group, CHECK_INPUT_KB, on_tvc_check,
 		0, 0, "check input", _("checkinput"), NULL);
 
-	keybindings_set_item(plugin_key_group, BRANCHES_INPUT_KB, on_branches_check,
+	keybindings_set_item(plugin_key_group, BRANCHES_INPUT_KB, numbering_branches,
 		0, 0, "branches", _("branchesinput"), NULL);
 
 
