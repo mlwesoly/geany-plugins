@@ -56,7 +56,7 @@ static int hookejointsmodel=0;
 static int hookejointsdefined=0;
 static int zerostiffnessesinmodel=0;
 
-
+static GtkWidget *s_context_sep_item, *s_context_checkinput_item, *s_context_recount_item;
 
 /* Keybinding(s) */
 enum
@@ -501,9 +501,6 @@ static void on_tvc_check()
 
     const char * curLine = my_string;
 	
-	//powercurves number of columns 
-    // reti10 = regcomp(&regex11, "^40[1-9][0-9] .*([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
-	
 	// wenn eine zeile 5 dann auch 2510 definition
 
 	// wenn eine zeile 15 dann auch 4150 definition, wenn zwei, dann mehr spalten
@@ -862,72 +859,12 @@ static void scania_damper()
 }
 
 
-/*
-TODO: static void CATERPILLAR_damper()
-
-checking by dampernumber, if data is already in list
-then placing before holzer area
-
-
-*/
-
-/*
-static void on_tools_show(G_GNUC_UNUSED GtkMenuItem *menuitem, G_GNUC_UNUSED gpointer gdata)
-{
-	gtk_widget_set_sensitive(main_menu_item, TRUE); //can_insert_numbers());
-}
-
-
-
-void plugin_help(void)
-{
-	GtkWidget *dialog,*label,*scroll;
-
-	dialog=gtk_dialog_new_with_buttons(_("Numbered Bookmarks help"),
-	                                   GTK_WINDOW(geany->main_widgets->window),
-	                                   GTK_DIALOG_DESTROY_WITH_PARENT,
-	                                   GTK_STOCK_OK,GTK_RESPONSE_ACCEPT,NULL);
-
-	label=gtk_label_new(
-_("This Plugin implements Numbered Bookmarks in Geany, as well as remembering the state of folds, \
-and positions of standard non-numbered bookmarks when a file is saved.\n\n"
-"It allows you to use up to 10 numbered bookmarks. To set a numbered bookmark press Ctrl+Shift+a n\
-"));
-	gtk_label_set_line_wrap(GTK_LABEL(label),TRUE);
-	gtk_widget_show(label);
-
-
-	scroll=gtk_scrolled_window_new(NULL,NULL);
-	gtk_scrolled_window_set_policy((GtkScrolledWindow*)scroll,GTK_POLICY_NEVER,
-	                               GTK_POLICY_AUTOMATIC);
-#if GTK_CHECK_VERSION(3, 8, 0)
-	gtk_widget_set_size_request(label, 800, -1);
-	gtk_widget_set_halign(label, GTK_ALIGN_CENTER);
-	gtk_widget_set_valign(label, GTK_ALIGN_CENTER);
-	gtk_widget_set_vexpand(label, TRUE);
-	gtk_container_add(GTK_CONTAINER(scroll),label);
-	gtk_scrolled_window_set_shadow_type((GtkScrolledWindow*)scroll, GTK_SHADOW_IN);
-#else
-	gtk_scrolled_window_add_with_viewport((GtkScrolledWindow*)scroll,label);
-#endif
-
-	gtk_container_add(GTK_CONTAINER(gtk_dialog_get_content_area(GTK_DIALOG(dialog))),scroll);
-	gtk_widget_show_all(dialog);
-
-	gtk_widget_set_size_request(dialog,-1,600);
-
-
-	gtk_dialog_run(GTK_DIALOG(dialog));
-	gtk_widget_destroy(dialog);
-}
-
-*/
-
 
 void plugin_init(G_GNUC_UNUSED GeanyData *data)
 {
 	GeanyKeyGroup *plugin_key_group;
 	setlocale(LC_NUMERIC, "C");
+	int contextmenu = 1;
 
 	plugin_key_group = plugin_set_key_group(geany_plugin, "TVCX_Group", COUNT_KB, NULL);
 
@@ -976,11 +913,26 @@ void plugin_init(G_GNUC_UNUSED GeanyData *data)
 
 	keybindings_set_item(plugin_key_group, PERCENT_OF_RATEDSPEED_KB, percent_of_ratedspeed,
 		0, 0, "percent_of_ratedspeed", _("percent_of_ratedspeed"), NULL);
-	
-	/*
-	plugin_signal_connect(geany_plugin, G_OBJECT(geany->main_widgets->tools_menu), "show",
-		TRUE, (GCallback) on_tools_show, NULL);
-	*/
+
+
+	if(contextmenu == 1){
+
+		s_context_sep_item = gtk_separator_menu_item_new();
+		gtk_widget_show(s_context_sep_item);
+		gtk_menu_shell_prepend(GTK_MENU_SHELL(geany->main_widgets->editor_menu), s_context_sep_item);
+		
+		s_context_checkinput_item = gtk_menu_item_new_with_mnemonic(_("check inputfile"));
+		gtk_widget_show(s_context_checkinput_item);
+		gtk_menu_shell_prepend(GTK_MENU_SHELL(geany->main_widgets->editor_menu), s_context_checkinput_item);
+		g_signal_connect((gpointer) s_context_checkinput_item, "activate", G_CALLBACK(on_tvc_check), NULL);
+
+		s_context_recount_item = gtk_menu_item_new_with_mnemonic(_("recount branches"));
+		gtk_widget_show(s_context_recount_item);
+		gtk_menu_shell_prepend(GTK_MENU_SHELL(geany->main_widgets->editor_menu), s_context_recount_item);
+		g_signal_connect((gpointer) s_context_recount_item, "activate", G_CALLBACK(numbering_branches), NULL);
+		
+	}
+
 }
 
 void plugin_cleanup(void)
