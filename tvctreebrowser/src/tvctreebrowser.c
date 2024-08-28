@@ -1516,23 +1516,102 @@ on_filter_clear(GtkEntry *entry, gint icon_pos, GdkEvent *event, gpointer data)
  * TREEVIEW EVENTS
  * ------------------ */
 
+/*static void open_selected_pdffiles(GList *list, gboolean do_not_focus)
+{
+	GList *item;
+	GError* err = NULL;
+	for (item = list; item != NULL; item = g_list_next(item))
+	{
+		GtkTreePath *treepath = item->data;
+		gchar *fname = get_tree_path_filename(treepath);
+
+		gchar *fpath = "file://";
+		
+		
+		gchar *fullpath = malloc(strlen(fpath) + strlen(fname) + 1);
+
+		strcpy(fullpath,fpath);
+		strcat(fullpath,fname);
+		
+		gtk_show_uri_on_window(NULL, fullpath, GDK_CURRENT_TIME, &err);
+		free(fullpath);
+	}	
+}*/
+/*
+
+static void on_openpdf_clicked(GtkMenuItem *menuitem, gpointer user_data)
+{
+	GtkTreeSelection *treesel;
+	GtkTreeModel *model;
+	GList *list;
+	gboolean dir_found;
+	
+	treesel = gtk_tree_view_get_selection(GTK_TREE_VIEW(file_view));
+
+	list = gtk_tree_selection_get_selected_rows(treesel, &model);
+	dir_found = is_folder_selected(list);
+
+	if (dir_found)
+	{
+		if (check_single_selection(treesel))
+		{
+			GtkTreePath *treepath = list->data;
+
+			open_folder(treepath);
+		}
+	}
+	else{
+		//open_selected_pdffiles(list, GPOINTER_TO_INT(user_data));
+		//ui_set_statusbar(TRUE, "hello");
+
+	}
+		
+	g_list_foreach(list, (GFunc) gtk_tree_path_free, NULL);
+	g_list_free(list);
+}
+*/
 static gboolean
 on_treeview_mouseclick(GtkWidget *widget, GdkEventButton *event, GtkTreeSelection *selection)
 {
+	GtkTreeIter 	iter;
+	GtkTreeModel 	*model;
+	GtkTreePath *path;
+	GtkWidget *menu;
+	gchar *name = NULL, *uri = NULL;
+	GError* err = NULL;
+	gchar *fpath = "file://";
+
 	if (event->button == 1 && event->type == GDK_2BUTTON_PRESS)
 	{
-		//on_openpdf_clicked(NULL, NULL);
-		ui_set_statusbar(TRUE,"button 1");
+		/*if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview),
+																		 (gint) event->x,
+																		 (gint) event->y,
+																		 &path, NULL, NULL, NULL))
+		{
+			// Unselect current selection; select clicked row from path
+			gtk_tree_selection_unselect_all(selection);
+			gtk_tree_selection_select_path(selection, path);
+			gtk_tree_path_free(path);
+		}*/
+		if (gtk_tree_selection_get_selected(selection, &model, &iter))
+			gtk_tree_model_get(GTK_TREE_MODEL(treestore), &iter,
+								TREEBROWSER_COLUMN_NAME, &name,
+								TREEBROWSER_COLUMN_URI, &uri,
+								-1);
+		
+		if (strstr(uri, "pdf") != NULL){
+			gchar *fullpath = malloc(strlen(fpath) + strlen(uri) + 1);
+		
+			strcpy(fullpath,fpath);
+			strcat(fullpath,uri);
+		
+			gtk_show_uri_on_window(NULL, fullpath, GDK_CURRENT_TIME, &err);
+		}
+		
 		return TRUE;
 	}
 	else if (event->button == 3)
 	{
-		GtkTreeIter 	iter;
-		GtkTreeModel 	*model;
-		GtkTreePath *path;
-		GtkWidget *menu;
-		gchar *name = NULL, *uri = NULL;
-
 		/* Get tree path for row that was clicked */
 		if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(treeview),
 																		 (gint) event->x,

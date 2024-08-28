@@ -51,7 +51,7 @@ void add_to_sidebar_addition(){
     gtk_box_pack_start(GTK_BOX(sidebar_vbox_bars), 			toolbar2, 			FALSE, TRUE,  1);
 }
 
-
+/*
 static void open_selected_pdffiles(GList *list, gboolean do_not_focus)
 {
 	//GSList *files = NULL;
@@ -86,7 +86,8 @@ static void open_selected_pdffiles(GList *list, gboolean do_not_focus)
 	//if (doc != NULL && ! do_not_focus)
 	//	keybindings_send_command(GEANY_KEY_GROUP_FOCUS, GEANY_KEYS_FOCUS_EDITOR);
 
-	//g_slist_foreach(files, (GFunc) g_free, NULL);	/* free filenames */
+	//g_slist_foreach(files, (GFunc) g_free, NULL);	// free filenames
 	//g_slist_free(files);
 	
 }
+*/
