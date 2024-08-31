@@ -39,4 +39,7 @@
 
 extern GtkWidget 			*sidebar_vbox_bars;
 
+void tvctreebrowser_chroot(const gchar *dir);
+void on_openTerminal();
+
 #endif

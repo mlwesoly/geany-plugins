@@ -24,13 +24,73 @@
 
 
 static     GtkWidget 			*toolbar2;
+static	GtkWidget *TVCnumberEntry;
+static gchar *currentTVCNumber = NULL;
+
+
+static void ui_textEntry_activate(GtkEntry *TVCNumberentry, gpointer user_data)
+{
+	gchar *text;
+	char temptext[15]; // 24_24_2.009
+	char newfolder[100];
+	regex_t regex;
+	int reti;
+	size_t maxGroups = 3;
+	regmatch_t groupArray[maxGroups];
+	reti = regcomp(&regex, ".*([0-9]{2}_[0-9]{2}_[0-9]\.[0-9]{3}).*", REG_EXTENDED);
+	
+	text = gtk_entry_get_text(GTK_ENTRY(TVCnumberEntry));
+	
+	reti = regexec(&regex, text, maxGroups, groupArray, 0);
+	if (!reti) {
+		char sourcecopy[strlen(text)+1];
+		strcpy(sourcecopy, text);
+		sourcecopy[groupArray[1].rm_eo] = 0;
+		strcpy(temptext, sourcecopy + groupArray[1].rm_so);
+		sprintf(newfolder,"/home/tvc/TVC.DATA/%s", temptext);
+	}
+
+	// SETPTR(current_dir, g_strdup(newfolder));
+	// hier ordner neu setzen 
+	tvctreebrowser_chroot(g_strdup(newfolder));
+
+	regfree(&regex);
+	//refresh();
+}
+
+static void ui_textEntry_changed(GtkEntry *TVCnumberEntry, gpointer user_data)
+{
+	gchar *text;
+	char temptext[15]; // 24_24_2.009
+	regex_t regex;
+	int reti;
+	size_t maxGroups = 3;
+	regmatch_t groupArray[maxGroups];
+	reti = regcomp(&regex, ".*([0-9]{2}_[0-9]{2}_[0-9]\.[0-9]{3}).*", REG_EXTENDED);
+	
+	text = gtk_entry_get_text(GTK_ENTRY(TVCnumberEntry));
+	
+	reti = regexec(&regex, text, maxGroups, groupArray, 0);
+	if (!reti) {
+		char sourcecopy[strlen(text)+1];
+		strcpy(sourcecopy, text);
+		sourcecopy[groupArray[1].rm_eo] = 0;
+		strcpy(temptext, sourcecopy + groupArray[1].rm_so);
+		ui_set_statusbar(TRUE, "Nummer eingegeben: %s", temptext);
+		currentTVCNumber= sourcecopy + groupArray[1].rm_so;
+	}
+	
+	regfree(&regex);
+}
+
 
 
 void create_sidebar_addition(){
     
     GtkWidget 			*wid;
 
-    toolbar2 = gtk_toolbar_new();
+    //toolbar2 = gtk_toolbar_new();
+	toolbar2 = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
 	gtk_toolbar_set_icon_size(GTK_TOOLBAR(toolbar2), GTK_ICON_SIZE_MENU);
 	gtk_toolbar_set_style(GTK_TOOLBAR(toolbar2), GTK_TOOLBAR_ICONS);
 
@@ -40,16 +100,22 @@ void create_sidebar_addition(){
 #else
 	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_GO_UP));
 #endif
-	gtk_widget_set_tooltip_text(wid, _("Go up"));
+	// gtk_widget_set_tooltip_text(wid, _("Go up"));
 	//g_signal_connect(wid, "clicked", G_CALLBACK(on_button_go_up), NULL);
-	gtk_container_add(GTK_CONTAINER(toolbar2), wid);
-    
-    
+	
+    TVCnumberEntry = gtk_entry_new();
+
+	g_signal_connect(TVCnumberEntry, "changed", G_CALLBACK(ui_textEntry_changed), NULL);
+	g_signal_connect(TVCnumberEntry, "activate", G_CALLBACK(ui_textEntry_activate), NULL);
+
+	gtk_box_pack_start(GTK_BOX(toolbar2), TVCnumberEntry, TRUE, TRUE, 0);
+    //gtk_container_add(GTK_CONTAINER(toolbar2), TVCnumberEntry);
 }
 
 void add_to_sidebar_addition(){
     gtk_box_pack_start(GTK_BOX(sidebar_vbox_bars), 			toolbar2, 			FALSE, TRUE,  1);
 }
+
 
 /*
 static void open_selected_pdffiles(GList *list, gboolean do_not_focus)
@@ -91,3 +157,204 @@ static void open_selected_pdffiles(GList *list, gboolean do_not_focus)
 	
 }
 */
+
+void on_openTerminal()
+{
+	GeanyDocument *doc = document_get_current();
+	gchar *locale_path2;
+	if (doc == NULL)
+	{
+		locale_path2 = "~";
+	}
+	else 
+	{
+		locale_path2 = g_path_get_dirname(doc->file_name);
+	}
+
+	const gchar *prefix="--working-directory=" ;
+	gchar *workingdic = g_strconcat(prefix , locale_path2, NULL);
+
+	char* command = "gnome-terminal";
+    //char* argument_list[] = {"gnome-terminal",  NULL};
+	char* argument_list[] = {"gnome-terminal ", workingdic , NULL};
+
+    if (fork() == 0) {
+        // Newly spawned child Process. This will be taken over by "ls -l"
+        int status_code = execvp(command, argument_list);
+        if (status_code == -1) {
+            printf("Terminated Incorrectly\n");
+            return;
+        }
+    }
+    else {
+        // Old Parent process. The C program will come here
+        printf("This line will be printed\n");
+    }
+	
+}
+
+
+int cp(const char *to, const char *from)
+{
+    int fd_to, fd_from;
+    char buf[4096];
+    ssize_t nread;
+    int saved_errno;
+
+    fd_from = open(from, O_RDONLY);
+    if (fd_from < 0)
+	{
+        return -1;
+	}
+
+    fd_to = open(to, O_WRONLY | O_CREAT | O_EXCL, 0666);
+    if (fd_to < 0)
+	{
+        goto out_error;
+	}
+
+    while (nread = read(fd_from, buf, sizeof buf), nread > 0)
+    {
+        char *out_ptr = buf;
+        ssize_t nwritten;
+
+        do {
+            nwritten = write(fd_to, out_ptr, nread);
+
+            if (nwritten >= 0)
+            {
+                nread -= nwritten;
+                out_ptr += nwritten;
+            }
+            else if (errno != EINTR)
+            {
+                goto out_error;
+            }
+        } while (nread > 0);
+    }
+
+    if (nread == 0)
+    {
+        if (close(fd_to) < 0)
+        {
+            fd_to = -1;
+            goto out_error;
+        }
+        close(fd_from);
+
+        /* Success! */
+        return 0;
+    }
+
+  out_error:
+    saved_errno = errno;
+
+    close(fd_from);
+    if (fd_to >= 0)
+        close(fd_to);
+
+    errno = saved_errno;
+    return -1;
+}
+/*
+static void ui_CoupEntry_activate(GtkEntry *coupentry, gpointer user_data)
+{
+	gchar *text;
+	char temptext[15]; // 24_24_2.009
+	regex_t regex, regexasterix, regexasterixone;
+	int reti, retiasterix,retiasterixone ;
+	size_t maxGroups = 3;
+	regmatch_t groupArray[maxGroups], groupArray2[maxGroups];
+	reti = regcomp(&regex, "([A-Z][0-9]{2}([1-4]|D)[0-9A-Z])", REG_EXTENDED | REG_ICASE  ); //REG_ICASE
+	retiasterix = regcomp(&regexasterix, "([A-Z][0-9][0-9A-Z][1-4A-Z])", REG_EXTENDED | REG_ICASE  ); //REG_ICASE
+	
+	text = gtk_entry_get_text(GTK_ENTRY(coupentry));
+	
+	reti = regexec(&regex, text, maxGroups, groupArray, 0);
+	retiasterix = regexec(&regexasterix, text, maxGroups, groupArray2, 0);
+	ui_set_statusbar(TRUE, "checking for coupling");
+
+	if (!reti) {
+		char sourcecopy[strlen(text)+1];
+		strcpy(sourcecopy, text);
+		sourcecopy[groupArray[1].rm_eo] = 0;
+		strcpy(temptext, sourcecopy + groupArray[1].rm_so);
+		ui_set_statusbar(TRUE, "%s", temptext);
+		// currentTVCNumber= sourcecopy + groupArray[1].rm_so;
+	} else if (!retiasterix){
+		char sourcecopy[strlen(text)+1];
+		strcpy(sourcecopy, text);
+		sourcecopy[groupArray2[1].rm_eo] = 0;
+		strcpy(temptext, sourcecopy + groupArray2[1].rm_so);
+		ui_set_statusbar(TRUE, "%s", temptext);
+		// currentTVCNumber= sourcecopy + groupArray[1].rm_so;
+	}
+	//ui_set_statusbar(TRUE, "after");
+	if(!reti){
+		DIR *d;
+		struct dirent *dir;
+		d = opendir(coupling_folder);
+		if (d) {
+			while ((dir = readdir(d)) != NULL) {
+				if (strcmp(dir->d_name, g_strconcat(coupling_prefix, temptext, ".dat", NULL)) == 0 ){
+					// printf("%s\n", dir->d_name);
+					// printf("%s\n",current_dir);
+					cp(g_strconcat(current_dir, "/", dir->d_name, NULL), g_strconcat(coupling_folder, dir->d_name, NULL) );
+				}
+			}
+			closedir(d);
+		}
+	} else if(!retiasterix){
+		DIR *d;
+		struct dirent *dir;
+		d = opendir(coupling_folder);
+		if (d) {
+			while ((dir = readdir(d)) != NULL) {
+				retiasterix = 1;
+				//sprintf(test);
+				retiasterix = regcomp(&regexasterixone, temptext , REG_EXTENDED | REG_ICASE  );
+				retiasterix = regexec(&regexasterixone, dir->d_name, 0, 0, 0);
+				if(!retiasterix){
+					ui_set_statusbar(TRUE, "%d %s", retiasterix, dir->d_name);
+					cp(g_strconcat(current_dir, "/", dir->d_name, NULL), g_strconcat(coupling_folder, dir->d_name, NULL) );
+					//ui_set_statusbar(TRUE, "%s", dir->d_name);
+				}
+				
+				//if (strcmp(dir->d_name, g_strconcat(coupling_prefix, temptext, ".dat", NULL)) == 0 ){
+				//	// printf("%s\n", dir->d_name);
+				//	// printf("%s\n",current_dir);
+				//	//cp(g_strconcat(current_dir, "/", dir->d_name, NULL), g_strconcat(coupling_folder, dir->d_name, NULL) );
+				//}
+				
+			}
+			closedir(d);
+		}
+	}
+
+	regfree(&regex);
+	regfree(&regexasterix);
+	refresh();
+}
+
+void overwrite_with_spaces() // in xtvc untergebracht
+{
+	GeanyDocument *doc = document_get_current();
+	ScintillaObject *sci = doc->editor->sci;
+
+	gint start = sci_get_selection_start(sci);
+	gint end = sci_get_selection_end(sci);
+	gint line_start = sci_get_line_from_position(sci,start);
+	gint line_end = sci_get_line_from_position(sci,end);
+
+	if(line_end == line_start){
+		if(sci_get_selection_mode(sci) == SC_SEL_RECTANGLE){
+			ui_set_statusbar(TRUE,"bitte nur in einer zeile markieren");
+		}else{
+			gchar *text = sci_get_selection_contents(sci);
+
+			memset(text, ' ', end-start);
+			sci_replace_sel(sci, text);
+			g_free(text);
+		}
+	}
+}*/

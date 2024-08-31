@@ -59,7 +59,7 @@ static gboolean 			flag_on_expand_refresh 		= FALSE;
 
 #ifndef G_OS_WIN32
 # define CONFIG_OPEN_EXTERNAL_CMD_DEFAULT "xdg-open '%d'"
-# define CONFIG_OPEN_TERMINAL_DEFAULT "xterm"
+# define CONFIG_OPEN_TERMINAL_DEFAULT "gnome-terminal"
 #else
 # define CONFIG_OPEN_EXTERNAL_CMD_DEFAULT "explorer %d"
 # define CONFIG_OPEN_TERMINAL_DEFAULT "cmd"
@@ -112,6 +112,7 @@ enum
 	KB_CREATE_DIR,
 	KB_REFRESH,
 	KB_TRACK_CURRENT,
+	OPENTER_KB,
 	KB_COUNT
 };
 
@@ -473,7 +474,7 @@ treebrowser_checkdir(gchar *directory)
 	return is_dir;
 }
 
-static void
+void
 tvctreebrowser_chroot(const gchar *dir)
 {
 	gchar *directory;
@@ -1001,20 +1002,32 @@ on_menu_current_path(GtkMenuItem *menuitem, gpointer *user_data)
 	g_free(uri);
 }
 
+
 static void
 on_menu_open_externally(GtkMenuItem *menuitem, const gchar *uri)
 {
 	gchar 				*cmd, *locale_cmd, *dir, *c;
 	GString 			*cmd_str 	= g_string_new(CONFIG_OPEN_EXTERNAL_CMD);
 	GError 				*error 		= NULL;
-
+	
 	dir = g_file_test(uri, G_FILE_TEST_IS_DIR) ? g_strdup(uri) : g_path_get_dirname(uri);
+	//dir = g_file_test(uri, G_FILE_TEST_EXISTS) ? g_strdup(uri) : g_path_get_dirname(uri);
+	
+	GError* err = NULL;
+	/*gchar *fullpath = malloc(strlen(dir) + strlen(uri) + 1);
 
+	strcpy(fullpath,dir);
+	strcat(fullpath,uri);
+	printf("%s %s %s", dir, uri, fullpath);
+	fflush(stdout);
+	gtk_show_uri_on_window(NULL, uri, GDK_CURRENT_TIME, &err);*/
+	
 	utils_string_replace_all(cmd_str, "%f", uri);
 	utils_string_replace_all(cmd_str, "%d", dir);
 
 	cmd = g_string_free(cmd_str, FALSE);
 	locale_cmd = utils_get_locale_from_utf8(cmd);
+
 	if (! spawn_async(dir, locale_cmd, NULL, NULL, NULL, &error))
 	{
 		c = strchr(cmd, ' ');
@@ -1600,6 +1613,13 @@ on_treeview_mouseclick(GtkWidget *widget, GdkEventButton *event, GtkTreeSelectio
 								-1);
 		
 		if (strstr(uri, "pdf") != NULL){
+			gchar *fullpath = malloc(strlen(fpath) + strlen(uri) + 1);
+		
+			strcpy(fullpath,fpath);
+			strcat(fullpath,uri);
+		
+			gtk_show_uri_on_window(NULL, fullpath, GDK_CURRENT_TIME, &err);
+		}else if(strstr(uri, "odt") != NULL){
 			gchar *fullpath = malloc(strlen(fpath) + strlen(uri) + 1);
 		
 			strcpy(fullpath,fpath);
@@ -2477,6 +2497,8 @@ plugin_init(GeanyData *data)
 		0, 0, "rename_refresh", _("Refresh"), NULL);
 	keybindings_set_item(key_group, KB_TRACK_CURRENT, kb_activate,
 		0, 0, "track_current", _("Track Current"), NULL);
+
+	keybindings_set_item(key_group, OPENTER_KB, on_openTerminal, 0, 0, "openTermin", _("openTermin"), NULL);
 
 	plugin_signal_connect(geany_plugin, NULL, "document-activate", TRUE,
 		(GCallback)&treebrowser_track_current_cb, NULL);

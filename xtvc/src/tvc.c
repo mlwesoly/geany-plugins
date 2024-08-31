@@ -77,8 +77,128 @@ enum
 	CALCULATE8_KB,
 	CALCULATE9_KB,
 	CALCULATE10_KB,
+	OVERWRITE_WITH_SPACES_KB,
+	OVERWRITE_BLOCK_SPACES_KB,
 	COUNT_KB
 };
+
+#define sci_point_x_from_position(sci, position) \
+	scintilla_send_message(sci, SCI_POINTXFROMPOSITION, 0, position)
+#define sci_get_pos_at_line_sel_start(sci, line) \
+	scintilla_send_message(sci, SCI_GETLINESELSTARTPOSITION, line, 0)
+
+static void update_display(void)
+{
+	while (gtk_events_pending())
+		gtk_main_iteration();
+}
+
+void overwrite_block_spaces()
+{
+	GeanyDocument *doc = document_get_current();
+	ScintillaObject *sci = doc->editor->sci;
+
+	gint start_pos = sci_get_selection_start(sci);
+	gint start_line = sci_get_line_from_position(sci, start_pos);
+	gint end_pos = sci_get_selection_end(sci);
+	gint end_line = sci_get_line_from_position(sci, end_pos);
+
+	gint xinsert = sci_point_x_from_position(sci, start_pos);
+	gint xend = sci_point_x_from_position(sci, end_pos);
+	gint *line_pos = g_new(gint, end_line - start_line + 1);
+
+
+	gint line, i;
+	gint64 start_value=1;
+	gint64 start = start_value;
+	gint64 value;
+	unsigned count = 0;
+	size_t length, lend;
+	gchar *buffer;
+
+	//ui_set_statusbar(TRUE,"%d %d",xinsert,xend);
+	//ui_set_statusbar(TRUE,"%d %d",start_pos,end_pos);
+
+	if (xend < xinsert)
+		xinsert = xend;
+
+	for (line = start_line, i = 0; line <= end_line; line++, i++)
+	{
+		if (sci_point_x_from_position(sci,
+			scintilla_send_message(sci, SCI_GETLINEENDPOSITION, line, 0)) >= xinsert)
+		{
+			line_pos[i] = sci_get_pos_at_line_sel_start(sci, line) -
+				sci_get_position_from_line(sci, line);
+			count++;
+		}
+		else
+			line_pos[i] = -1;
+
+		/*if (cancel && i % 2500 == 0)
+		{
+			update_display();
+			if (*cancel)
+			{
+				ui_progress_bar_stop();
+				g_free(line_pos);
+				return;
+			}
+		}*/
+	}
+	sci_start_undo_action(sci);
+	sci_replace_sel(sci, "");
+	buffer = g_new(gchar, (xend-xinsert)/8);
+	buffer[length-1] = '\0';
+	//gchar *text = sci_get_selection_contents(sci);
+	memset(buffer,' ', ((xend-xinsert)/8)-1);
+
+	for (line = start_line, i = 0; line <= end_line; line++, i++)
+	{
+		gint insert_pos;
+
+		if (line_pos[i] < 0)
+			continue;
+
+		insert_pos = sci_get_position_from_line(sci, line) + line_pos[i];
+
+		sci_insert_text(sci, insert_pos, buffer);
+		//ui_set_statusbar(TRUE,"%s",line);
+		/*if (cancel && i % 1000 == 0)
+		{
+			update_display();
+			if (*cancel)
+			{
+				scintilla_send_message(sci, SCI_GOTOPOS, insert_pos + length, 0);
+				break;
+			}
+		}*/
+	}
+	sci_end_undo_action(sci);
+	g_free(line_pos);
+}
+
+void overwrite_with_spaces()
+{
+	GeanyDocument *doc = document_get_current();
+	ScintillaObject *sci = doc->editor->sci;
+
+	gint start = sci_get_selection_start(sci);
+	gint end = sci_get_selection_end(sci);
+	gint line_start = sci_get_line_from_position(sci,start);
+	gint line_end = sci_get_line_from_position(sci,end);
+
+	if(line_end == line_start){
+		if(sci_get_selection_mode(sci) == SC_SEL_RECTANGLE){
+			ui_set_statusbar(TRUE,"bitte nur in einer zeile markieren");
+		}else{
+			gchar *text = sci_get_selection_contents(sci);
+
+			memset(text, ' ', end-start);
+			sci_replace_sel(sci, text);
+			g_free(text);
+		}
+	}
+}
 
 static void on_calculateX(int Stellen)
 {
@@ -910,6 +1030,13 @@ void plugin_init(G_GNUC_UNUSED GeanyData *data)
 
 	keybindings_set_item(plugin_key_group, SCANIADAMPER_KB, scania_damper,
 		0, 0, "scania_damper", _("scania_damper"), NULL);
+
+	keybindings_set_item(plugin_key_group, OVERWRITE_BLOCK_SPACES_KB, overwrite_block_spaces, 
+		0, 0, "overwrite_block_spaces", _("overwrite_block_spaces"), NULL);
+
+	
+	keybindings_set_item(plugin_key_group, OVERWRITE_WITH_SPACES_KB, overwrite_with_spaces, 
+		0, 0, "overwrite_with_spaces", _("overwrite_with_spaces"), NULL);
 
 	keybindings_set_item(plugin_key_group, PERCENT_OF_RATEDSPEED_KB, percent_of_ratedspeed,
 		0, 0, "percent_of_ratedspeed", _("percent_of_ratedspeed"), NULL);
