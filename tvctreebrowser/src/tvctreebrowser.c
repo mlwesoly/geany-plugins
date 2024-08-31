@@ -1611,8 +1611,9 @@ on_treeview_mouseclick(GtkWidget *widget, GdkEventButton *event, GtkTreeSelectio
 								TREEBROWSER_COLUMN_NAME, &name,
 								TREEBROWSER_COLUMN_URI, &uri,
 								-1);
-		
-		if (strstr(uri, "pdf") != NULL){
+								
+		char * pointer = strstr(uri, "pdf");
+		if ( pointer ){
 			gchar *fullpath = malloc(strlen(fpath) + strlen(uri) + 1);
 		
 			strcpy(fullpath,fpath);
