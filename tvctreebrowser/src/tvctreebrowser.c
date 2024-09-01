@@ -2178,6 +2178,8 @@ on_calcbutton_activate(void)
 	GError** error
 	)*/
 	//"-10% \n 100% \n +10%"
+	// TODO : umrechnung in SI einheiten
+	
 	char buffer[100];
 	double b=7.49828376321988E-07;
     double m=4.77736479998192;
