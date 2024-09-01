@@ -17,6 +17,8 @@
 #include <gdk/gdkkeysyms.h>
 #include "tvctreebrowser.h"
 #include "tvcaddition.h"
+#include "bild.h"
+#include <math.h>
 
 #include "geany.h"
 #include <geanyplugin.h>
@@ -33,6 +35,7 @@ GeanyPlugin 				*geany_plugin;
 GeanyData 					*geany_data;
 
 static gint 				page_number 				= 0;
+static gint 				page_number2 				= 1;
 static GtkTreeStore 		*treestore;
 static GtkWidget 			*treeview;
 static GtkWidget 			*sidebar_vbox;
@@ -46,6 +49,9 @@ static gboolean 			bookmarks_expanded = FALSE;
 
 static GtkTreeViewColumn 	*treeview_column_text;
 static GtkCellRenderer 		*render_icon, *render_text;
+
+static	GtkWidget *viewprop, *propsize;
+static	GtkTextBuffer *bufferprop;
 
 /* ------------------
  * FLAGS
@@ -2113,6 +2119,151 @@ create_sidebar(void)
 	showbars(CONFIG_SHOW_BARS);
 }
 
+static void
+on_infobutton_activate(void)
+{
+	GtkWidget *dialog, *label, *label2, *content_area;
+	GtkDialogFlags flags;
+	GtkWidget *image;
+
+	// Create the widgets
+	flags = GTK_DIALOG_DESTROY_WITH_PARENT;
+	dialog = gtk_dialog_new_with_buttons ("Message",
+		GTK_WINDOW(geany->main_widgets->window),
+		flags,
+		_("_OK"),
+		GTK_RESPONSE_NONE,
+		NULL);
+	content_area = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+
+
+	label = gtk_label_new ("hier gibt es info");
+	label2 = gtk_label_new ("als entrained water können 25% zuschlag gerechnet werden\n	Damit ");
+	GdkPixbuf * pixbuf = gdk_pixbuf_new_from_inline(-1, proppic, FALSE, NULL);
+	
+	GtkWidget* logo = gtk_image_new_from_pixbuf(pixbuf);
+
+  	//image = gtk_image_new_from_file ("/home/miki/Documents/bild.png");
+	// Ensure that the dialog box is destroyed when the user responds
+
+	g_signal_connect_swapped (dialog,
+	"response",
+	G_CALLBACK (gtk_widget_destroy),
+	dialog);
+
+	// Add the label, and show everything we’ve added
+
+	gtk_container_add (GTK_CONTAINER (content_area), label);
+	gtk_container_add (GTK_CONTAINER (content_area), logo);
+	gtk_container_add (GTK_CONTAINER (content_area), label2);
+
+	gtk_widget_show_all (dialog);
+}
+
+static void
+on_calcbutton_activate(void)
+{
+	gchar *text;
+  	guint64 *out_num;
+ 	 GError** error;
+
+	// hier die berechnung fuer abschaetung vom prop rein
+	gchar * test = gtk_entry_get_text(GTK_ENTRY(propsize));
+	gboolean returnvalue = g_ascii_string_to_unsigned(test,10,1,20000,out_num,error);
+	/*const gchar* str,
+	guint base,
+	guint64 min,
+	guint64 max,
+	guint64* out_num,
+	GError** error
+	)*/
+	//"-10% \n 100% \n +10%"
+	char buffer[100];
+	double b=7.49828376321988E-07;
+    double m=4.77736479998192;
+	double num=strtod(test,NULL);
+	//y=b*x^m
+	if(returnvalue)
+	{
+   		sprintf(buffer, "%.f", b*pow(num,m) );
+		gtk_text_buffer_set_text (bufferprop, buffer, -1);
+	}else{
+		gtk_text_buffer_set_text (bufferprop, "Bitte ganze Zahl zwischen 10 und 20000 eingeben", -1);
+	}
+
+}
+
+static void
+create_sidebar2(void)
+{
+	GtkWidget *label, *sidebar_vbox_propeller, *sidebar_vbox_filler, *sidebar_vbox_propellerbtn;
+	GtkWidget *calcbutton, *propresults, *infobutton;
+	GtkTextTagTable *texttagtable1;
+	GtkTextTag *texttag1;
+	GtkTextBuffer *textbuffer;
+
+	sidebar_vbox 			= gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+	sidebar_vbox_propeller	= gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+	sidebar_vbox_propellerbtn	= gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
+	sidebar_vbox_filler		= gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+
+
+	// ----------- Propeller estimation --------------------------------------- start
+	label = gtk_label_new(_("Propeller:"));
+	
+	propsize = gtk_entry_new();
+	gtk_entry_set_placeholder_text( GTK_ENTRY(propsize),"Propsize in mm");
+	ui_entry_add_clear_icon(GTK_ENTRY(propsize));
+
+	calcbutton = gtk_button_new_with_label ("calculate J");
+	infobutton = gtk_button_new_with_label ("?");
+
+	//gtk_text_view_set_buffer (GTK_TEXT_VIEW(propresults),"-10% \n 100% \n +10%");
+
+
+	viewprop = gtk_text_view_new ();
+
+	bufferprop = gtk_text_view_get_buffer (GTK_TEXT_VIEW (viewprop));
+
+	gtk_text_buffer_set_text (bufferprop, "warte auf eingabe", -1);
+
+	g_signal_connect(calcbutton, 		"clicked", 			G_CALLBACK(on_calcbutton_activate), 			NULL);
+	g_signal_connect(infobutton, 		"clicked", 			G_CALLBACK(on_infobutton_activate), 			NULL);
+	
+	/*texttagtable1 = gtk_text_tag_table_new ();
+	texttag1 = gtk_text_tag_new ("test01");
+
+	textbuffer = gtk_text_buffer_new (texttagtable1);
+	gtk_text_buffer_set_text ( textbuffer, "tralal",20);
+
+	gtk_text_tag_table_add ( texttagtable1, texttag1);
+
+	propresults = gtk_text_view_new_with_buffer (textbuffer);
+	gtk_text_view_set_editable (GTK_TEXT_VIEW(propresults), FALSE);
+	*/
+	
+	g_signal_connect(propsize, "activate", G_CALLBACK(on_calcbutton_activate), NULL);
+
+
+	gtk_box_pack_start(GTK_BOX(sidebar_vbox_propeller), 				label, 			TRUE,  FALSE,  1);
+	gtk_box_pack_start(GTK_BOX(sidebar_vbox_propeller), 				propsize, 			TRUE,  FALSE,  1);
+
+
+	gtk_box_pack_start(GTK_BOX(sidebar_vbox_propellerbtn), 				calcbutton, 			TRUE,  TRUE,  1);
+	gtk_box_pack_start(GTK_BOX(sidebar_vbox_propellerbtn), 				infobutton, 			FALSE,  FALSE,  1);
+	gtk_box_pack_start(GTK_BOX(sidebar_vbox_propeller), 				sidebar_vbox_propellerbtn, 			TRUE,  FALSE,  1);
+	gtk_box_pack_start(GTK_BOX(sidebar_vbox_propeller), viewprop, 			TRUE,  FALSE,  1);
+
+	gtk_box_pack_start(GTK_BOX(sidebar_vbox), 				sidebar_vbox_propeller, 			FALSE,  FALSE,  1);
+
+	// ----------- Propeller estimation --------------------------------------- end
+
+	gtk_box_pack_start(GTK_BOX(sidebar_vbox), 				sidebar_vbox_filler, 			TRUE,  TRUE,  0);
+
+	gtk_widget_show_all(sidebar_vbox);
+	page_number2 = gtk_notebook_append_page(GTK_NOTEBOOK(geany->main_widgets->sidebar_notebook),
+							sidebar_vbox, gtk_label_new(_("Helper")));
+}
 
 /* ------------------
  * CONFIG DIALOG
@@ -2479,6 +2630,8 @@ plugin_init(GeanyData *data)
 
 	load_settings();
 	create_sidebar();
+	create_sidebar2();
+
 	tvctreebrowser_chroot(get_default_dir());
 
 	/* setup keybindings */
