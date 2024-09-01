@@ -239,7 +239,9 @@ static void on_calculateX(int Stellen)
 			//fprintf(stderr, "Could not compile regex\n");
 			//exit(1);
 		}
-
+		// wenn gerechnet hinten an die zeile die temperatur ranschreiben
+		// vielleicht ueder zweite keybinding mit paramter aufrufen und 
+		// den berechneten term ersetzen
 		reti03 = regexec(&regex01, f_content, maxGroups, groupArray, 0);
 		if (!reti03) {
 			char sourcecopy[strlen(f_content)+1];
