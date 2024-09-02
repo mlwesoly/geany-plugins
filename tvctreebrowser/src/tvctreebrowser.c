@@ -1633,6 +1633,13 @@ on_treeview_mouseclick(GtkWidget *widget, GdkEventButton *event, GtkTreeSelectio
 			strcat(fullpath,uri);
 		
 			gtk_show_uri_on_window(NULL, fullpath, GDK_CURRENT_TIME, &err);
+		}else if(strstr(uri, "ps") != NULL){
+			gchar *fullpath = malloc(strlen(fpath) + strlen(uri) + 1);
+		
+			strcpy(fullpath,fpath);
+			strcat(fullpath,uri);
+		
+			gtk_show_uri_on_window(NULL, fullpath, GDK_CURRENT_TIME, &err);
 		}
 		
 		return TRUE;
