@@ -214,6 +214,8 @@ static void on_calculateX(int Stellen)
 	long double b=0.0;
 
 	gint selection_end;
+	gint selection_start;
+
 	if (doc && !doc->readonly)
 	{
 		// einlesen des selektierten bereichs 
@@ -326,9 +328,21 @@ static void on_calculateX(int Stellen)
 					break;
 			}
 			selection_end = sci_get_selection_end(sci);
+			selection_start = sci_get_selection_start(sci);
 			sci_insert_text(sci, selection_end, buf);
 			ui_set_statusbar(TRUE, "result: %s", buf);
+
+			if ((!reti03) || (!reti04)){
+				char buf2[50];
+				int line = sci_get_line_from_position(sci, selection_end);
+				int line_end = sci_get_line_end_position(sci,line);
+				sprintf(buf2, "  %.2f@%.2f°C", Pkv30, Pkvtemp);
+				//sprintf(buf, " test");
+				sci_insert_text(sci, line_end, buf2);
+			}
 			sci_set_current_position (sci, selection_end, TRUE);
+			sci_set_selection_start (sci,selection_start);
+			sci_set_selection_end (sci,selection_end);
 			
 			clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 			primary = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
