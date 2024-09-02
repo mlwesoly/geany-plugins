@@ -2008,6 +2008,7 @@ create_sidebar(void)
 	filter 					= gtk_entry_new();
 	scrollwin 				= gtk_scrolled_window_new(NULL, NULL);
 
+	gtk_entry_set_placeholder_text( GTK_ENTRY(filter),"File filter");
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollwin), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	
 	create_sidebar_addition();

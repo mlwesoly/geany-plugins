@@ -104,6 +104,7 @@ void create_sidebar_addition(){
 	//g_signal_connect(wid, "clicked", G_CALLBACK(on_button_go_up), NULL);
 	
     TVCnumberEntry = gtk_entry_new();
+	gtk_entry_set_placeholder_text( GTK_ENTRY(TVCnumberEntry),"TVC Number AA_BB_C.XYZ");
 
 	g_signal_connect(TVCnumberEntry, "changed", G_CALLBACK(ui_textEntry_changed), NULL);
 	g_signal_connect(TVCnumberEntry, "activate", G_CALLBACK(ui_textEntry_activate), NULL);
