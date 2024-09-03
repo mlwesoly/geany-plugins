@@ -2028,7 +2028,12 @@ create_sidebar(void)
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollwin), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	
 	create_sidebar_addition();
-	make_tvcbar();
+	//char * getenv (const char *name)
+	char * username = getenv("user");
+	if(!strcmp(username,"wesolym")){
+		make_tvcbar();
+	}
+
 
 	toolbar = gtk_toolbar_new();
 	gtk_toolbar_set_icon_size(GTK_TOOLBAR(toolbar), GTK_ICON_SIZE_MENU);
