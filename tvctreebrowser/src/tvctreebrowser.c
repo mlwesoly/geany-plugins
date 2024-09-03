@@ -50,6 +50,13 @@ static gboolean 			bookmarks_expanded = FALSE;
 static GtkTreeViewColumn 	*treeview_column_text;
 static GtkCellRenderer 		*render_icon, *render_text;
 
+static gchar *currentTVCNumber = NULL;
+static gchar *coupling_folder = NULL;
+static gchar *coupling_prefix = NULL;
+static gchar *transfer_folder = NULL;
+static gchar *reporttype = NULL;
+static gchar *templatetype = NULL;
+
 static GtkWidget *expander;
 static	GtkWidget *viewprop, *propsize;
 static	GtkTextBuffer *bufferprop;
@@ -2315,14 +2322,15 @@ static void fill_combo_entry (GtkWidget *combo)
   //gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "industry");
 }
 
-/*static void copynewreport(void)
+
+static void copynewreport(void)
 {
 	gchar *locale_path;
 	GeanyDocument *doc = document_get_current();
 	locale_path = g_path_get_dirname(doc->file_name);
 	//execlp("python", "python", "/home/michael/my_script.py", "test", (char*) NULL);
 	char* command = "python3";
-    char* argument_list[] = {"python3", "/home/tvc/tools/python/copArename.py", current_dir, reporttype, NULL};
+    char* argument_list[] = {"python3", "/home/tvc/tools/python/copArename.py", addressbar_last_address, reporttype, NULL};
 	
 	int pid = fork();
     if (pid == 0) {
@@ -2339,7 +2347,8 @@ static void fill_combo_entry (GtkWidget *combo)
         printf("This line will be printed\n");
     }
 	waitpid(pid, NULL, 0);
-	refresh();
+
+	on_menu_refresh(NULL,NULL);
 }
 
 static void finalizereport(void)
@@ -2355,7 +2364,7 @@ static void finalizereport(void)
 	//printf("%s",locale_path);
 	//execlp("python", "python", "/home/michael/my_script.py", "test", (char*) NULL);
 	char* command = "/home/tvc/PycharmProjects/PrepareReport/main.py";
-    char* argument_list[] = {"/home/tvc/PycharmProjects/PrepareReport/main.py", current_dir, locale_filename, NULL};
+    char* argument_list[] = {"/home/tvc/PycharmProjects/PrepareReport/main.py", addressbar_last_address, locale_filename, NULL};
 	printf("%s", locale_filename);
 	
 	int pid = fork();
@@ -2373,7 +2382,8 @@ static void finalizereport(void)
         printf("This line will be printed\n");
     }
 	waitpid(pid, NULL, 0);
-	refresh();
+
+	on_menu_refresh(NULL,NULL);
 }
 
 static void makereport_copy(void)
@@ -2386,10 +2396,12 @@ static void makereport_copy(void)
 		locale_path = g_path_get_dirname(doc->file_name);
 		locale_filename = doc->file_name;
 	}
+	
 	//printf("%s",locale_path);
+	//fflush(stdout);
 	//execlp("python", "python", "/home/michael/my_script.py", "test", (char*) NULL);
 	char* command = "python3";
-    char* argument_list[] = {"python3", "/home/tvc/tools/python/makereportcopy.py", current_dir, reporttype, NULL};
+    char* argument_list[] = {"python3", "/home/tvc/tools/python/makereportcopy.py", addressbar_last_address, reporttype, NULL};
 	
 	//char* command = "/home/tvc/PycharmProjects/PrepareReport/main.py";
     //char* argument_list[] = {"/home/tvc/PycharmProjects/makereport/main.py", current_dir, NULL};
@@ -2410,8 +2422,10 @@ static void makereport_copy(void)
         printf("This line will be printed\n");
     }
 	waitpid(pid, NULL, 0);
-	refresh();
+
+	on_menu_refresh(NULL,NULL);
 }
+
 
 static void update_current_shell(void)
 {
@@ -2448,7 +2462,7 @@ static void update_current_shell(void)
     }
 	waitpid(pid, NULL, 0);
 	
-	refresh();
+	on_menu_refresh(NULL,NULL);
 }
 
 static void set_report_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user_data)
@@ -2526,7 +2540,7 @@ static void copy_new_project_template()
 	//printf("%s",locale_path);
 	//execlp("python", "python", "/home/michael/my_script.py", "test", (char*) NULL);
 	char* command = "python3";
-    char* argument_list[] = {"python3", "/home/tvc/tools/python/copy_project_template.py", current_dir, templatetype, NULL};
+    char* argument_list[] = {"python3", "/home/tvc/tools/python/copy_project_template.py", addressbar_last_address, templatetype, NULL};
 	
 	//char* command = "/home/tvc/PycharmProjects/PrepareReport/main.py";
     //char* argument_list[] = {"/home/tvc/PycharmProjects/makereport/main.py", current_dir, NULL};
@@ -2547,8 +2561,9 @@ static void copy_new_project_template()
         printf("This line will be printed\n");
     }
 	waitpid(pid, NULL, 0);
-	refresh();	
-}*/
+
+	on_menu_refresh(NULL,NULL);	
+}
 
 
 
@@ -2563,7 +2578,6 @@ static void make_tvcbar(void)
 	add_stock_item();
 	expander = gtk_expander_new ("addition");
 
-	// makereport_copy
 	label = gtk_label_new(_("rep:"));
 	gtk_box_pack_start(GTK_BOX(topsub2), label, FALSE, FALSE, 0);
 	//gtk_toolbar_set_icon_size(GTK_TOOLBAR(topsub2), GTK_ICON_SIZE_MENU);
@@ -2571,42 +2585,38 @@ static void make_tvcbar(void)
 
 	choosereportstyle = gtk_combo_box_text_new();
     fill_combo_entry (choosereportstyle);
-	//g_signal_connect(choosereportstyle, "changed", G_CALLBACK(set_report_style), NULL);
+	g_signal_connect(choosereportstyle, "changed", G_CALLBACK(set_report_style), NULL);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(choosereportstyle),0);
 	gtk_box_pack_start(GTK_BOX(topsub2), choosereportstyle, FALSE, FALSE, 0);
 	
-	//newreport = gtk_tool_button_new(GEANYTEST_STOCK);
-	//gtk_box_pack_start(GTK_BOX(topsub2), newreport, TRUE, TRUE, 0);
-	//g_signal_connect(filter_combo, "changed", G_CALLBACK(ui_combo_box_changed), NULL);
-
 	// document-edit
 	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_NEW));
 	gtk_widget_set_tooltip_text(wid, _("New report odt"));
-	//g_signal_connect(wid, "clicked", G_CALLBACK(copynewreport), NULL);
-	//gtk_box_pack_start(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 0);
+	g_signal_connect(wid, "clicked", G_CALLBACK(copynewreport), NULL);
+	gtk_box_pack_start(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 0);
 
 	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_APPLY));
 	gtk_widget_set_tooltip_text(wid, _("Fill report odt"));
-	//g_signal_connect(wid, "clicked", G_CALLBACK(finalizereport), NULL);
-	//gtk_box_pack_start(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 0);
+	g_signal_connect(wid, "clicked", G_CALLBACK(finalizereport), NULL);
+	gtk_box_pack_start(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 0);
 
 	//wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_EXECUTE));  //view_refresh GEANYTEST_STOCK
 	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GEANYTEST_STOCK));
 	gtk_widget_set_tooltip_text(wid, _("update current shell"));
-	//g_signal_connect(wid, "clicked", G_CALLBACK(update_current_shell), NULL);
-	//gtk_box_pack_end(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 0);
+	g_signal_connect(wid, "clicked", G_CALLBACK(update_current_shell), NULL);
+	gtk_box_pack_end(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 0);
 
 	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_PROPERTIES));
 	gtk_widget_set_tooltip_text(wid, _("copy makereport.sh"));
-	//g_signal_connect(wid, "clicked", G_CALLBACK(makereport_copy), NULL);
+	g_signal_connect(wid, "clicked", G_CALLBACK(makereport_copy), NULL);
 	//gtk_container_add(GTK_CONTAINER(topsub2), wid);
-	//gtk_box_pack_end(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 1);
+	gtk_box_pack_end(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 1);
 	
 	gtk_box_pack_start(GTK_BOX(top), topsub1, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(top), topsub2, FALSE, FALSE, 0);
 
 	gtk_container_add(GTK_CONTAINER(expander), top);
-
+	gtk_expander_set_expanded(expander,TRUE);
 }
 
 /* ------------------
