@@ -358,4 +358,96 @@ void overwrite_with_spaces() // in xtvc untergebracht
 			g_free(text);
 		}
 	}
-}*/
+}
+
+static void fill_combo_entry2 (GtkWidget *combo)
+{
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EP");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EA");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EMP");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "industry");
+}
+
+static GtkWidget *make_start_project(void)
+{
+	
+	GtkWidget *wid, *toolbar, *newreport, *iconwidget, *choosereportstyle;
+	GtkWidget *label, *top, *topsub1, *topsub2;
+	top = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+	topsub1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+	topsub2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+
+	toolbar = gtk_toolbar_new();
+	//topsub2 = gtk_toolbar_new();
+	
+	label = gtk_label_new(_("Start Project"));
+	gtk_box_pack_start(GTK_BOX(topsub1), label, FALSE, FALSE, 0);
+
+	// makereport_copy
+	label = gtk_label_new(_("type:"));
+	gtk_box_pack_start(GTK_BOX(topsub2), label, FALSE, FALSE, 0);
+	//gtk_toolbar_set_icon_size(GTK_TOOLBAR(topsub2), GTK_ICON_SIZE_MENU);
+	//gtk_toolbar_set_style(GTK_TOOLBAR(topsub2), GTK_TOOLBAR_ICONS);
+
+	choosereportstyle = gtk_combo_box_text_new();
+    fill_combo_entry2(choosereportstyle);
+	g_signal_connect(choosereportstyle, "changed", G_CALLBACK(set_template_style), NULL);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(choosereportstyle),0);
+	gtk_box_pack_start(GTK_BOX(topsub2), choosereportstyle, FALSE, FALSE, 0);
+	
+	//newreport = gtk_tool_button_new(GEANYTEST_STOCK);
+	//gtk_box_pack_start(GTK_BOX(topsub2), newreport, TRUE, TRUE, 0);
+	//g_signal_connect(filter_combo, "changed", G_CALLBACK(ui_combo_box_changed), NULL);
+
+	// document-edit
+	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_NEW));
+	gtk_widget_set_tooltip_text(wid, _("Project template files copied"));
+	g_signal_connect(wid, "clicked", G_CALLBACK(copy_new_project_template), NULL);
+	gtk_container_add(GTK_CONTAINER(topsub2), wid);
+	
+
+	gtk_box_pack_start(GTK_BOX(top), topsub1, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(top), topsub2, FALSE, FALSE, 0);
+	//gtk_box_pack_start(GTK_BOX(top), toolbar, TRUE, TRUE, 0);
+
+
+	//return toolbar;
+	return top;
+}
+
+
+static GtkWidget *make_coupbar(void)
+{
+	GtkWidget *wid, *toolbar;
+	GtkWidget *label, *top;
+	top = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+
+	toolbar = gtk_toolbar_new();
+	
+	label = gtk_label_new(_("Kupplungsbezeichner:"));
+
+	coupentry = gtk_entry_new();
+	gtk_entry_set_placeholder_text( GTK_ENTRY(coupentry),"X3012, F5014, ... ");
+	//ui_entry_add_clear_icon(GTK_ENTRY(filter_entry));
+
+	g_signal_connect(coupentry, "activate", G_CALLBACK(ui_CoupEntry_activate), NULL);
+
+	gtk_toolbar_set_icon_size(GTK_TOOLBAR(toolbar), GTK_ICON_SIZE_MENU);
+	gtk_toolbar_set_style(GTK_TOOLBAR(toolbar), GTK_TOOLBAR_ICONS);
+
+	gtk_box_pack_start(GTK_BOX(top), label, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(top), coupentry, TRUE, TRUE, 0);
+
+	//g_signal_connect(filter_combo, "changed", G_CALLBACK(ui_combo_box_changed), NULL);
+
+
+
+	//gtk_box_pack_start(GTK_BOX(top), topsub1, FALSE, FALSE, 0);
+	//gtk_box_pack_start(GTK_BOX(top), toolbar, TRUE, TRUE, 0);
+
+
+	//return toolbar;
+	return top;
+}
+
+*/

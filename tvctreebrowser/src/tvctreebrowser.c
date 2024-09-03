@@ -50,6 +50,7 @@ static gboolean 			bookmarks_expanded = FALSE;
 static GtkTreeViewColumn 	*treeview_column_text;
 static GtkCellRenderer 		*render_icon, *render_text;
 
+static GtkWidget *expander;
 static	GtkWidget *viewprop, *propsize;
 static	GtkTextBuffer *bufferprop;
 
@@ -160,6 +161,7 @@ static void 	on_menu_create_new_object(GtkMenuItem *menuitem, const gchar *type)
 static void 	load_settings(void);
 static gboolean save_settings(void);
 
+static void make_tvcbar(void);
 
 /* ------------------
  * PLUGIN CALLBACKS
@@ -1985,7 +1987,7 @@ static void
 create_sidebar(void)
 {
 	GtkWidget 			*scrollwin;
-	GtkWidget 			*toolbar;
+	GtkWidget 			*toolbar,*tvctoolbar;
 	GtkWidget 			*wid;
 	GtkTreeSelection 	*selection;
 
@@ -2019,6 +2021,7 @@ create_sidebar(void)
 	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollwin), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
 	
 	create_sidebar_addition();
+	make_tvcbar();
 
 	toolbar = gtk_toolbar_new();
 	gtk_toolbar_set_icon_size(GTK_TOOLBAR(toolbar), GTK_ICON_SIZE_MENU);
@@ -2086,9 +2089,11 @@ create_sidebar(void)
 
 	gtk_container_add(GTK_CONTAINER(scrollwin), 			treeview);
 	add_to_sidebar_addition();
+	gtk_box_pack_start(GTK_BOX(sidebar_vbox_bars), 			expander, 			FALSE, TRUE,  1);
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox_bars), 			filter, 			FALSE, TRUE,  1);
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox_bars), 			addressbar, 		FALSE, TRUE,  1);
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox_bars), 			toolbar, 			FALSE, TRUE,  1);
+	
 	
 
 	gtk_widget_set_tooltip_text(filter,
@@ -2273,6 +2278,335 @@ create_sidebar2(void)
 	gtk_widget_show_all(sidebar_vbox);
 	page_number2 = gtk_notebook_append_page(GTK_NOTEBOOK(geany->main_widgets->sidebar_notebook),
 							sidebar_vbox, gtk_label_new(_("Helper")));
+}
+
+
+#define GEANYTEST_STOCK "newreportodt"
+
+static void add_stock_item(void)
+{
+	GtkIconSet *icon_set;
+	GtkIconFactory *factory = gtk_icon_factory_new();
+	GtkIconTheme *theme = gtk_icon_theme_get_default();
+	GtkStockItem item = { (gchar*)(GEANYTEST_STOCK), (gchar*)(N_("Newreport")), 0, 0, (gchar*)(GETTEXT_PACKAGE) };
+
+	if (gtk_icon_theme_has_icon(theme, "document-new"))
+	{
+		GtkIconSource *icon_source = gtk_icon_source_new();
+		icon_set = gtk_icon_set_new();
+		gtk_icon_source_set_icon_name(icon_source, "view-refresh");
+		gtk_icon_set_add_source(icon_set, icon_source);
+		gtk_icon_source_free(icon_source);
+	}
+
+	gtk_icon_factory_add(factory, item.stock_id, icon_set);
+	gtk_stock_add(&item, 1);
+	gtk_icon_factory_add_default(factory);
+
+	g_object_unref(factory);
+	gtk_icon_set_unref(icon_set);
+}
+
+static void fill_combo_entry (GtkWidget *combo)
+{
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EP");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EA");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EMP");
+  //gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "industry");
+}
+
+/*static void copynewreport(void)
+{
+	gchar *locale_path;
+	GeanyDocument *doc = document_get_current();
+	locale_path = g_path_get_dirname(doc->file_name);
+	//execlp("python", "python", "/home/michael/my_script.py", "test", (char*) NULL);
+	char* command = "python3";
+    char* argument_list[] = {"python3", "/home/tvc/tools/python/copArename.py", current_dir, reporttype, NULL};
+	
+	int pid = fork();
+    if (pid == 0) {
+        // Newly spawned child Process.
+        int status_code = execvp(command, argument_list);
+		
+        if (status_code == -1) {
+            printf("Terminated Incorrectly\n");
+            return;
+        }
+    }
+    else {
+        // Old Parent process. The C program will come here
+        printf("This line will be printed\n");
+    }
+	waitpid(pid, NULL, 0);
+	refresh();
+}
+
+static void finalizereport(void)
+{
+	gchar *locale_path;
+	gchar *locale_filename;
+	GeanyDocument *doc = document_get_current();
+	if (doc != NULL)
+	{
+		locale_path = g_path_get_dirname(doc->file_name);
+		locale_filename = doc->file_name;
+	}
+	//printf("%s",locale_path);
+	//execlp("python", "python", "/home/michael/my_script.py", "test", (char*) NULL);
+	char* command = "/home/tvc/PycharmProjects/PrepareReport/main.py";
+    char* argument_list[] = {"/home/tvc/PycharmProjects/PrepareReport/main.py", current_dir, locale_filename, NULL};
+	printf("%s", locale_filename);
+	
+	int pid = fork();
+    if (pid == 0) {
+        // Newly spawned child Process.
+        int status_code = execvp(command, argument_list);
+		
+        if (status_code == -1) {
+            printf("Terminated Incorrectly\n");
+            return;
+        }
+    }
+    else {
+        // Old Parent process. The C program will come here
+        printf("This line will be printed\n");
+    }
+	waitpid(pid, NULL, 0);
+	refresh();
+}
+
+static void makereport_copy(void)
+{
+	gchar *locale_path;
+	gchar *locale_filename;
+	GeanyDocument *doc = document_get_current();
+	if (doc != NULL)
+	{
+		locale_path = g_path_get_dirname(doc->file_name);
+		locale_filename = doc->file_name;
+	}
+	//printf("%s",locale_path);
+	//execlp("python", "python", "/home/michael/my_script.py", "test", (char*) NULL);
+	char* command = "python3";
+    char* argument_list[] = {"python3", "/home/tvc/tools/python/makereportcopy.py", current_dir, reporttype, NULL};
+	
+	//char* command = "/home/tvc/PycharmProjects/PrepareReport/main.py";
+    //char* argument_list[] = {"/home/tvc/PycharmProjects/makereport/main.py", current_dir, NULL};
+	//printf("%s", locale_filename);
+	
+	int pid = fork();
+    if (pid == 0) {
+        // Newly spawned child Process.
+        int status_code = execvp(command, argument_list);
+		
+        if (status_code == -1) {
+            printf("Terminated Incorrectly\n");
+            return;
+        }
+    }
+    else {
+        // Old Parent process. The C program will come here
+        printf("This line will be printed\n");
+    }
+	waitpid(pid, NULL, 0);
+	refresh();
+}
+
+static void update_current_shell(void)
+{
+	gchar *locale_path;
+	gchar *locale_filename;
+	gchar *file_basename;
+	GeanyDocument *doc = document_get_current();
+	if (doc != NULL)
+	{
+		locale_path = g_path_get_dirname(doc->file_name);
+		locale_filename = doc->file_name;
+		file_basename = g_path_get_basename(doc->file_name);
+		
+	}
+	char* command = "/bin/bash";
+    char* argument_list[] = {"/bin/bash", "/home/tvc/tools/shell/update_tvc_script", file_basename, locale_filename, NULL}; //"/bin/bash", 
+	
+	//char* command = "/mnt/hgfs/Scripts/BASH_LINUX_TVC/update_script.sh";
+    //char* argument_list[] = {"/mnt/hgfs/Scripts/BASH_LINUX_TVC/update_script.sh ", locale_filename, NULL};
+	
+	int pid = fork();
+    if (pid == 0) {
+        // Newly spawned child Process.
+        int status_code = execv(command, argument_list);
+		
+        if (status_code == -1) {
+            printf("Terminated Incorrectly\n");
+            return;
+        }
+    }
+    else {
+        // Old Parent process. The C program will come here
+        printf("This line will be printed\n");
+    }
+	waitpid(pid, NULL, 0);
+	
+	refresh();
+}
+
+static void set_report_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user_data)
+{
+	gint index;
+	// get the value from 
+
+	index = gtk_combo_box_get_active(combobox);
+	//printf("%d",gtk_combo_box_get_active(combobox));
+	switch ( index )
+	{
+		// declarations
+		// . . .
+		case 0:
+			printf("EP Anlage");
+			reporttype = "EP";
+			break;
+		case 1:
+			printf("EA Anlage");
+			reporttype = "EA";
+			break;
+		case 2:
+			printf("EMP Anlage");
+			reporttype = "EMP";
+			break;
+		case 3:
+			printf("industry");
+			reporttype = "industry";
+			break;
+		default:
+			printf("default\n");
+	}
+	fflush(stdout);
+}
+
+static void set_template_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user_data)
+{
+	gint index;
+	// get the value from 
+
+	index = gtk_combo_box_get_active(combobox);
+	//printf("%d",gtk_combo_box_get_active(combobox));
+	switch ( index )
+	{
+		// declarations
+		// . . .
+		case 0:
+			templatetype = "EP";
+			break;
+		case 1:
+			templatetype = "EA";
+			break;
+		case 2:
+			templatetype = "EMP";
+			break;
+		case 3:
+			templatetype = "industry";
+			break;
+		default:
+			printf("default\n");
+	}
+	fflush(stdout);
+}
+
+static void copy_new_project_template()
+{
+	gchar *locale_path;
+	gchar *locale_filename;
+	GeanyDocument *doc = document_get_current();
+	if (doc != NULL)
+	{
+		locale_path = g_path_get_dirname(doc->file_name);
+		locale_filename = doc->file_name;
+	}
+	//printf("%s",locale_path);
+	//execlp("python", "python", "/home/michael/my_script.py", "test", (char*) NULL);
+	char* command = "python3";
+    char* argument_list[] = {"python3", "/home/tvc/tools/python/copy_project_template.py", current_dir, templatetype, NULL};
+	
+	//char* command = "/home/tvc/PycharmProjects/PrepareReport/main.py";
+    //char* argument_list[] = {"/home/tvc/PycharmProjects/makereport/main.py", current_dir, NULL};
+	//printf("%s", locale_filename);
+	
+	int pid = fork();
+    if (pid == 0) {
+        // Newly spawned child Process.
+        int status_code = execvp(command, argument_list);
+		
+        if (status_code == -1) {
+            printf("Terminated Incorrectly\n");
+            return;
+        }
+    }
+    else {
+        // Old Parent process. The C program will come here
+        printf("This line will be printed\n");
+    }
+	waitpid(pid, NULL, 0);
+	refresh();	
+}*/
+
+
+
+static void make_tvcbar(void)
+{
+	GtkWidget *wid, *toolbar, *newreport, *iconwidget, *choosereportstyle;
+	GtkWidget *label, *top, *topsub1, *topsub2;
+	top = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+	topsub1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+	topsub2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
+	
+	add_stock_item();
+	expander = gtk_expander_new ("addition");
+
+	// makereport_copy
+	label = gtk_label_new(_("rep:"));
+	gtk_box_pack_start(GTK_BOX(topsub2), label, FALSE, FALSE, 0);
+	//gtk_toolbar_set_icon_size(GTK_TOOLBAR(topsub2), GTK_ICON_SIZE_MENU);
+	//gtk_toolbar_set_style(GTK_TOOLBAR(topsub2), GTK_TOOLBAR_ICONS);
+
+	choosereportstyle = gtk_combo_box_text_new();
+    fill_combo_entry (choosereportstyle);
+	//g_signal_connect(choosereportstyle, "changed", G_CALLBACK(set_report_style), NULL);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(choosereportstyle),0);
+	gtk_box_pack_start(GTK_BOX(topsub2), choosereportstyle, FALSE, FALSE, 0);
+	
+	//newreport = gtk_tool_button_new(GEANYTEST_STOCK);
+	//gtk_box_pack_start(GTK_BOX(topsub2), newreport, TRUE, TRUE, 0);
+	//g_signal_connect(filter_combo, "changed", G_CALLBACK(ui_combo_box_changed), NULL);
+
+	// document-edit
+	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_NEW));
+	gtk_widget_set_tooltip_text(wid, _("New report odt"));
+	//g_signal_connect(wid, "clicked", G_CALLBACK(copynewreport), NULL);
+	//gtk_box_pack_start(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 0);
+
+	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_APPLY));
+	gtk_widget_set_tooltip_text(wid, _("Fill report odt"));
+	//g_signal_connect(wid, "clicked", G_CALLBACK(finalizereport), NULL);
+	//gtk_box_pack_start(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 0);
+
+	//wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_EXECUTE));  //view_refresh GEANYTEST_STOCK
+	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GEANYTEST_STOCK));
+	gtk_widget_set_tooltip_text(wid, _("update current shell"));
+	//g_signal_connect(wid, "clicked", G_CALLBACK(update_current_shell), NULL);
+	//gtk_box_pack_end(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 0);
+
+	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_PROPERTIES));
+	gtk_widget_set_tooltip_text(wid, _("copy makereport.sh"));
+	//g_signal_connect(wid, "clicked", G_CALLBACK(makereport_copy), NULL);
+	//gtk_container_add(GTK_CONTAINER(topsub2), wid);
+	//gtk_box_pack_end(GTK_CONTAINER(topsub2), wid, FALSE, FALSE, 1);
+	
+	gtk_box_pack_start(GTK_BOX(top), topsub1, FALSE, FALSE, 0);
+	gtk_box_pack_start(GTK_BOX(top), topsub2, FALSE, FALSE, 0);
+
+	gtk_container_add(GTK_CONTAINER(expander), top);
+
 }
 
 /* ------------------
