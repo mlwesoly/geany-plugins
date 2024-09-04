@@ -74,6 +74,7 @@ static gboolean 			flag_on_expand_refresh 		= FALSE;
 #ifndef G_OS_WIN32
 # define CONFIG_OPEN_EXTERNAL_CMD_DEFAULT "xdg-open '%d'"
 # define CONFIG_OPEN_TERMINAL_DEFAULT "gnome-terminal"
+# define CONFIG_OPEN_NAUTILUS_DEFAULT "nautilus"
 #else
 # define CONFIG_OPEN_EXTERNAL_CMD_DEFAULT "explorer %d"
 # define CONFIG_OPEN_TERMINAL_DEFAULT "cmd"
@@ -1061,6 +1062,32 @@ on_menu_open_externally(GtkMenuItem *menuitem, const gchar *uri)
 static void
 on_menu_open_terminal(GtkMenuItem *menuitem, const gchar *uri)
 {
+	gchar *cwd;
+	if (g_file_test(uri, G_FILE_TEST_EXISTS))
+		cwd = g_file_test(uri, G_FILE_TEST_IS_DIR) ? g_strdup(uri) : g_path_get_dirname(uri);
+	else
+		cwd = g_strdup(addressbar_last_address);
+
+	spawn_async(cwd, CONFIG_OPEN_TERMINAL, NULL, NULL, NULL, NULL);
+	g_free(cwd);
+}
+
+static void
+on_menu_open_nautilus(GtkMenuItem *menuitem, const gchar *uri)
+{ // TODO :
+	gchar *cwd;
+	if (g_file_test(uri, G_FILE_TEST_EXISTS))
+		cwd = g_file_test(uri, G_FILE_TEST_IS_DIR) ? g_strdup(uri) : g_path_get_dirname(uri);
+	else
+		cwd = g_strdup(addressbar_last_address);
+
+	spawn_async(cwd, CONFIG_OPEN_TERMINAL, NULL, NULL, NULL, NULL);
+	g_free(cwd);
+}
+
+static void
+on_menu_run_if_its_script(GtkMenuItem *menuitem, const gchar *uri)
+{ // TODO :
 	gchar *cwd;
 	if (g_file_test(uri, G_FILE_TEST_EXISTS))
 		cwd = g_file_test(uri, G_FILE_TEST_IS_DIR) ? g_strdup(uri) : g_path_get_dirname(uri);
@@ -2656,6 +2683,7 @@ load_settings(void)
 
 	CONFIG_OPEN_EXTERNAL_CMD 		= utils_get_setting_string (config, "tvctreebrowser", "open_external_cmd", 	CONFIG_OPEN_EXTERNAL_CMD_DEFAULT);
 	CONFIG_OPEN_TERMINAL 			= utils_get_setting_string (config, "tvctreebrowser", "open_terminal", CONFIG_OPEN_TERMINAL_DEFAULT);
+	CONFIG_OPEN_NAUTILUS 			= utils_get_setting_string (config, "tvctreebrowser", "open_nautilus", CONFIG_OPEN_NAUTILUS_DEFAULT);
 	CONFIG_REVERSE_FILTER 			= utils_get_setting_boolean(config, "tvctreebrowser", "reverse_filter", 		CONFIG_REVERSE_FILTER);
 	CONFIG_ONE_CLICK_CHDOC 			= utils_get_setting_boolean(config, "tvctreebrowser", "one_click_chdoc", 		CONFIG_ONE_CLICK_CHDOC);
 	CONFIG_SHOW_HIDDEN_FILES 		= utils_get_setting_boolean(config, "tvctreebrowser", "show_hidden_files", 	CONFIG_SHOW_HIDDEN_FILES);
@@ -2690,6 +2718,7 @@ save_settings(void)
 
 	g_key_file_set_string(config, 	"treebrowser", "open_external_cmd", 	CONFIG_OPEN_EXTERNAL_CMD);
 	g_key_file_set_string(config, 	"treebrowser", "open_terminal", 	CONFIG_OPEN_TERMINAL);
+	g_key_file_set_string(config, 	"treebrowser", "open_nautilus", 	CONFIG_OPEN_NAUTILUS);
 	g_key_file_set_boolean(config, 	"treebrowser", "reverse_filter", 		CONFIG_REVERSE_FILTER);
 	g_key_file_set_boolean(config, 	"treebrowser", "one_click_chdoc", 		CONFIG_ONE_CLICK_CHDOC);
 	g_key_file_set_boolean(config, 	"treebrowser", "show_hidden_files", 	CONFIG_SHOW_HIDDEN_FILES);
