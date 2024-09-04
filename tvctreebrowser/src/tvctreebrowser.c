@@ -83,6 +83,7 @@ static gboolean 			flag_on_expand_refresh 		= FALSE;
 static gchar 				*CONFIG_FILE 				= NULL;
 static gchar 				*CONFIG_OPEN_EXTERNAL_CMD 	= NULL;
 static gchar 				*CONFIG_OPEN_TERMINAL 	= NULL;
+static gchar 				*CONFIG_OPEN_NAUTILUS 	= NULL;
 static gboolean 			CONFIG_REVERSE_FILTER 		= FALSE;
 static gboolean 			CONFIG_ONE_CLICK_CHDOC 		= FALSE;
 static gboolean 			CONFIG_SHOW_HIDDEN_FILES 	= FALSE;
@@ -1074,14 +1075,15 @@ on_menu_open_terminal(GtkMenuItem *menuitem, const gchar *uri)
 
 static void
 on_menu_open_nautilus(GtkMenuItem *menuitem, const gchar *uri)
-{ // TODO :
+{ 
 	gchar *cwd;
 	if (g_file_test(uri, G_FILE_TEST_EXISTS))
 		cwd = g_file_test(uri, G_FILE_TEST_IS_DIR) ? g_strdup(uri) : g_path_get_dirname(uri);
 	else
 		cwd = g_strdup(addressbar_last_address);
-
-	spawn_async(cwd, CONFIG_OPEN_TERMINAL, NULL, NULL, NULL, NULL);
+		
+	char* argument_list[] = {addressbar_last_address , NULL};
+	spawn_async(cwd, CONFIG_OPEN_NAUTILUS, argument_list, NULL, NULL, NULL);
 	g_free(cwd);
 }
 
@@ -1362,6 +1364,17 @@ create_popup_menu(const gchar *name, const gchar *uri)
 	item = ui_image_menu_item_new("utilities-terminal", _("Open _Terminal"));
 	gtk_container_add(GTK_CONTAINER(menu), item);
 	g_signal_connect_data(item, "activate", G_CALLBACK(on_menu_open_terminal), g_strdup(uri), (GClosureNotify)g_free, 0);
+
+
+#if GTK_CHECK_VERSION(3, 10, 0)
+	item = ui_image_menu_item_new("document-open", _("Open N_autilus"));
+#else
+	item = ui_image_menu_item_new(GTK_STOCK_OPEN, _("Open N_autilus"));
+#endif
+	gtk_container_add(GTK_CONTAINER(menu), item);
+	g_signal_connect_data(item, "activate", G_CALLBACK(on_menu_open_nautilus), g_strdup(uri), (GClosureNotify)g_free, 0);
+	gtk_widget_set_sensitive(item, is_exists);
+
 
 #if GTK_CHECK_VERSION(3, 10, 0)
 	item = ui_image_menu_item_new("go-top", _("Set as _Root"));
@@ -2659,6 +2672,7 @@ static struct
 {
 	GtkWidget *OPEN_EXTERNAL_CMD;
 	GtkWidget *OPEN_TERMINAL;
+	GtkWidget *OPEN_NAUTILUS;
 	GtkWidget *REVERSE_FILTER;
 	GtkWidget *ONE_CLICK_CHDOC;
 	GtkWidget *SHOW_HIDDEN_FILES;
@@ -2752,6 +2766,7 @@ on_configure_response(GtkDialog *dialog, gint response, gpointer user_data)
 
 	CONFIG_OPEN_EXTERNAL_CMD 	= gtk_editable_get_chars(GTK_EDITABLE(configure_widgets.OPEN_EXTERNAL_CMD), 0, -1);
 	CONFIG_OPEN_TERMINAL     	= gtk_editable_get_chars(GTK_EDITABLE(configure_widgets.OPEN_TERMINAL), 0, -1);
+	CONFIG_OPEN_NAUTILUS     	= gtk_editable_get_chars(GTK_EDITABLE(configure_widgets.OPEN_NAUTILUS), 0, -1);
 	CONFIG_REVERSE_FILTER 		= gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(configure_widgets.REVERSE_FILTER));
 	CONFIG_ONE_CLICK_CHDOC 		= gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(configure_widgets.ONE_CLICK_CHDOC));
 	CONFIG_SHOW_HIDDEN_FILES 	= gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(configure_widgets.SHOW_HIDDEN_FILES));
@@ -3053,5 +3068,6 @@ plugin_cleanup(void)
 	g_free(CONFIG_FILE);
 	g_free(CONFIG_OPEN_EXTERNAL_CMD);
 	g_free(CONFIG_OPEN_TERMINAL);
+	g_free(CONFIG_OPEN_NAUTILUS);
 	gtk_widget_destroy(sidebar_vbox);
 }
