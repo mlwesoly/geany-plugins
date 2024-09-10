@@ -123,7 +123,7 @@ int exa_1 (void)
     // so geany does not stop to work
     int n = (int) kernel[0][0], i;
     int m = (int) kernel[0][1];
-    if (m<2) return;
+    //if (m<2) return;
     float xsteps,ysteps,xstart,ystart,xstop,ystop;
     float xmax, xmin, ymax, ymin;
     float tempymax,tempymin;
@@ -202,10 +202,10 @@ int exa_1 (void)
         
         graf   (xmin, xmax, xstart, xsteps, ymin, ymax, ystart, ysteps);
         title  ();
-        char *cbuf[50];
-        legini (cbuf,m-1,50);
+        //char *cbuf[50];
+        //legini (cbuf,m-1,50);
         
-        legtit (" ");
+        //legtit (" ");
 
         color  ("red");
         chncrv ("COLOR");
@@ -213,14 +213,14 @@ int exa_1 (void)
         for(int h = 1;h < m; h++)
         {
             gchar *my_string = g_strdup_printf("%i", h);
-            leglin (cbuf,my_string,h);
+            //leglin (cbuf,my_string,h);
             for (i = 0; i < n; i++)
             {
                 y1ray[i] = (float) kernel[i+1][h];
             }
             curve  (xray, y1ray, n);
         }
-        legend (cbuf,3);
+        //legend (cbuf,3);
         color  ("fore");
         dash   ();
         xaxgit ();

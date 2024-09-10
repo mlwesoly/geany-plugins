@@ -4,7 +4,7 @@
 
 #include "tvcprint.h"
 #include "tvcformatter.h"
-
+#include <awklib.h>
 
 static void start_formatter(void)
 {
