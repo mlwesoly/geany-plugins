@@ -30,4 +30,6 @@
 void create_sidebar_addition();
 void add_to_sidebar_addition();
 
+int cp(const char *to, const char *from);
+
 #endif
