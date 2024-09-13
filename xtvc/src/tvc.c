@@ -546,7 +546,7 @@ static void count_all_hookejointslines(char * tempStr)
 	
 	//Hooke
 	retim = regcomp(&regexm, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 12(.*)", REG_EXTENDED);
-    retid = regcomp(&regexd, "42[0-9][0-9] *([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
+    retid = regcomp(&regexd, "^42[0-9][0-9] *([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
 
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);
 	if (!retim) {
