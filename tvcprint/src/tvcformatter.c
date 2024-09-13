@@ -4,7 +4,6 @@
 
 #include "tvcprint.h"
 #include "tvcformatter.h"
-#include <awklib.h>
 
 static void start_formatter(void)
 {
@@ -54,7 +53,7 @@ static void start_formatter(void)
         close(des_p[0]);       //closing pipe read
         close(des_p[1]);
 
-        char* prog1[] = { "/home/miki/awk/tvcformatter", locale_filename, 0};
+        char* prog1[] = { "/home/tvc/tools/awk/tvcformatter", locale_filename, 0};
         execvp(prog1[0], prog1);
         perror("execvp of formatter failed");
         exit(1);

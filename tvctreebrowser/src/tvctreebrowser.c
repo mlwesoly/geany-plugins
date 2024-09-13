@@ -2078,9 +2078,9 @@ create_sidebar(void)
 	create_sidebar_addition();
 	//char * getenv (const char *name)
 	char * username;
-	if(getenv("USER")) {
-		username = getenv("USER");	
-		if(!strcmp(username,"miki")){
+	if(getenv("user")) {
+		username = getenv("user");	
+		if(!strcmp(username,"wesolym")){
 			make_tvcbar();
 			make_coupbar();
 		}
@@ -2175,7 +2175,7 @@ create_sidebar(void)
 	{
 		gtk_box_pack_start(GTK_BOX(sidebar_vbox), 				scrollwin, 			TRUE,  TRUE,  1);
 		gtk_box_pack_start(GTK_BOX(sidebar_vbox), 				sidebar_vbox_bars, 	FALSE, TRUE,  1);
-		if(!strcmp(username,"miki")){
+		if(!strcmp(username,"wesolym")){
 			gtk_box_pack_start(GTK_BOX(sidebar_vbox), coupbar, 	FALSE, TRUE,  1);
 		}
 	}
@@ -2183,7 +2183,7 @@ create_sidebar(void)
 	{
 		gtk_box_pack_start(GTK_BOX(sidebar_vbox), 				sidebar_vbox_bars, 	FALSE, TRUE,  1);
 		gtk_box_pack_start(GTK_BOX(sidebar_vbox), 				scrollwin, 			TRUE,  TRUE,  1);
-		if(!strcmp(username,"miki")){
+		if(!strcmp(username,"wesolym")){
 			gtk_box_pack_start(GTK_BOX(sidebar_vbox), coupbar, 	FALSE, TRUE,  1);
 		}
 	}
@@ -2229,7 +2229,7 @@ on_infobutton_activate(void)
 	
 	GtkWidget* logo = gtk_image_new_from_pixbuf(pixbuf);
 
-  	//image = gtk_image_new_from_file ("/home/miki/Documents/bild.png");
+  	//image = gtk_image_new_from_file ("/home/wesolym/Documents/bild.png");
 	// Ensure that the dialog box is destroyed when the user responds
 
 	g_signal_connect_swapped (dialog,
