@@ -61,7 +61,9 @@ static gchar *coupling_folder = NULL;
 static gchar *coupling_prefix = NULL;
 static gchar *transfer_folder = NULL;
 static gchar *reporttype = NULL;
+static gchar *couppath = NULL;
 static gchar *templatetype = NULL;
+static gchar *coupusage = NULL;
 
 static GtkWidget *expander, *coupentry, *coupbar;
 static	GtkWidget *viewprop, *propsize;
@@ -2247,7 +2249,7 @@ on_infobutton_activate(void)
 }
 
 static void
-on_calcbutton_activate(void)
+on_propcalc_button_activate(void)
 {
 	gchar *text;
   	guint64 *out_num;
@@ -2271,11 +2273,12 @@ on_calcbutton_activate(void)
 	double b=7.49828376321988E-07;
     double m=4.77736479998192;
 	double num=strtod(durchmesser,NULL);
-	num = num / 25.4;
+	num = num;
 	//y=b*x^m
 	if(returnvalue)
 	{
-   		sprintf(buffer, "%.1f", (b*pow(num,m))*0.113 );
+		ui_set_statusbar(TRUE,"durmesser: %.2f J=%.3lf", num/25.4,b*pow(num/25.4,m));
+   		sprintf(buffer, "%.1f", (b*pow(num / 25.4,m))*0.113 );
 		gtk_text_buffer_set_text (bufferprop, buffer, -1);
 	}else{
 		gtk_text_buffer_set_text (bufferprop, "Bitte ganze Zahl zwischen 100 und 20000 eingeben", -1);
@@ -2316,10 +2319,9 @@ create_sidebar2(void)
 
 	gtk_text_buffer_set_text (bufferprop, "warte auf eingabe", -1);
 
-	g_signal_connect(calcbutton, "clicked", G_CALLBACK(on_calcbutton_activate), NULL);
 	g_signal_connect(infobutton, "clicked", G_CALLBACK(on_infobutton_activate), NULL);
-		
-	g_signal_connect(propsize, "activate", G_CALLBACK(on_calcbutton_activate), NULL);
+	g_signal_connect(calcbutton, "clicked", G_CALLBACK(on_propcalc_button_activate), NULL);
+	g_signal_connect(propsize, "activate", G_CALLBACK(on_propcalc_button_activate), NULL);
 
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox_propeller), label, TRUE,  FALSE,  1);
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox_propeller), propsize, TRUE,  FALSE,  1);
@@ -2332,6 +2334,10 @@ create_sidebar2(void)
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox), sidebar_vbox_propeller, FALSE,  FALSE,  1);
 
 	// ----------- Propeller estimation --------------------------------------- end
+	// ----------- mech - electrical degree --------------------------------------- start
+	// mechanical <-> electrical degree umrechnen ( mit Klassenauswahl um limit zu bekommen oder hier eine link zu onenote quelle)
+
+
 
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox), 				sidebar_vbox_filler, 			TRUE,  TRUE,  0);
 
@@ -2367,13 +2373,14 @@ create_sidebar2(void)
 	gtk_icon_set_unref(icon_set);
 }*/
 
-static void fill_combo_entry (GtkWidget *combo)
+static void fill_comboreport_entry (GtkWidget *combo)
 {
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EP");
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EA");
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EMP");
   //gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "industry");
 }
+
 
 
 static void copynewreport(void)
@@ -2521,14 +2528,9 @@ static void update_current_shell(void)
 static void set_report_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user_data)
 {
 	gint index;
-	// get the value from 
-
 	index = gtk_combo_box_get_active(combobox);
-	//printf("%d",gtk_combo_box_get_active(combobox));
 	switch ( index )
 	{
-		// declarations
-		// . . .
 		case 0:
 			reporttype = "EP";
 			break;
@@ -2544,7 +2546,6 @@ static void set_report_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user
 		default:
 			printf("default\n");
 	}
-	fflush(stdout);
 }
 
 static void set_template_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user_data)
@@ -2618,20 +2619,32 @@ static void ui_CoupEntry_activate(GtkEntry *coupentry, gpointer user_data)
 {
 	gchar *text;
 	char temptext[15]; // 24_24_2.009
-	regex_t regex, regexasterix, regexasterixone;
-	int reti, retiasterix,retiasterixone ;
+	regex_t regex, regexasterix, regexasterixone, regexsilicone;
+	int reti, retiasterix, retiasterixone, retisilicone;
+	gchar *material="";
 	size_t maxGroups = 3;
-	regmatch_t groupArray[maxGroups], groupArray2[maxGroups];
+	regmatch_t groupArray[maxGroups], groupArray2[maxGroups], groupArray3[maxGroups];
 	reti = regcomp(&regex, "([A-Z][0-9]{2}([1-4]|D)[0-9A-Z])", REG_EXTENDED | REG_ICASE  ); //REG_ICASE
 	retiasterix = regcomp(&regexasterix, "([A-Z][0-9][0-9A-Z][1-4A-Z])", REG_EXTENDED | REG_ICASE  ); //REG_ICASE
+	retisilicone = regcomp(&regexsilicone, "([A-Z][0-9]{2}[1-4][0-9]S)", REG_EXTENDED | REG_ICASE  ); //REG_ICASE
 	
 	text = gtk_entry_get_text(GTK_ENTRY(coupentry));
 	
 	reti = regexec(&regex, text, maxGroups, groupArray, 0);
 	retiasterix = regexec(&regexasterix, text, maxGroups, groupArray2, 0);
+	retisilicone = regexec(&regexsilicone, text, maxGroups, groupArray3, 0);
 	ui_set_statusbar(TRUE, "checking for coupling");
-
-	if (!reti) {
+	
+	if (!retisilicone){
+		char sourcecopy[strlen(text)+1];
+		strcpy(sourcecopy, text);
+		sourcecopy[groupArray3[1].rm_eo] = 0;
+		strcpy(temptext, sourcecopy + groupArray3[1].rm_so);
+		ui_set_statusbar(TRUE, "%s", temptext);
+		reti=1;
+		retiasterix=1;
+		// currentTVCNumber= sourcecopy + groupArray[1].rm_so;
+	}else if (!reti) {
 		char sourcecopy[strlen(text)+1];
 		strcpy(sourcecopy, text);
 		sourcecopy[groupArray[1].rm_eo] = 0;
@@ -2645,18 +2658,31 @@ static void ui_CoupEntry_activate(GtkEntry *coupentry, gpointer user_data)
 		strcpy(temptext, sourcecopy + groupArray2[1].rm_so);
 		ui_set_statusbar(TRUE, "%s", temptext);
 		// currentTVCNumber= sourcecopy + groupArray[1].rm_so;
-	}
-	//ui_set_statusbar(TRUE, "after");
+	} 
+
 	if(!reti){
+		material = "Gummi/";
+	}else if(!retisilicone){
+		material = "Silikon/";
+	}
+	
+	//ui_set_statusbar(TRUE, "after");
+	// couppath
+	coupling_folder = "/home/tvc/Kupplungen/coups";
+	coupling_prefix = "cn";
+	printf("%s",g_strconcat(coupling_folder,couppath,coupusage,material));
+	fflush(stdout);
+	if(!reti||!retisilicone){
 		DIR *d;
 		struct dirent *dir;
-		d = opendir(coupling_folder);
+		d = opendir(g_strconcat(coupling_folder,couppath,coupusage,material));
 		if (d) {
 			while ((dir = readdir(d)) != NULL) {
 				if (strcmp(dir->d_name, g_strconcat(coupling_prefix, temptext, ".dat", NULL)) == 0 ){
-					// printf("%s\n", dir->d_name);
+					//printf("%s\n", dir->d_name);
+					ui_set_statusbar(TRUE, "%s", dir->d_name);
 					// printf("%s\n",current_dir);
-					cp(g_strconcat(addressbar_last_address, "/", dir->d_name, NULL), g_strconcat(coupling_folder, dir->d_name, NULL) );
+					cp(g_strconcat(addressbar_last_address, "/", dir->d_name, NULL), g_strconcat(coupling_folder,couppath,coupusage,material, dir->d_name, NULL) );
 				}
 			}
 			closedir(d);
@@ -2664,7 +2690,7 @@ static void ui_CoupEntry_activate(GtkEntry *coupentry, gpointer user_data)
 	} else if(!retiasterix){
 		DIR *d;
 		struct dirent *dir;
-		d = opendir(coupling_folder);
+		d = opendir(g_strconcat(coupling_folder,couppath,coupusage,material));
 		if (d) {
 			while ((dir = readdir(d)) != NULL) {
 				retiasterix = 1;
@@ -2673,28 +2699,115 @@ static void ui_CoupEntry_activate(GtkEntry *coupentry, gpointer user_data)
 				retiasterix = regexec(&regexasterixone, dir->d_name, 0, 0, 0);
 				if(!retiasterix){
 					ui_set_statusbar(TRUE, "%d %s", retiasterix, dir->d_name);
-					cp(g_strconcat(addressbar_last_address, "/", dir->d_name, NULL), g_strconcat(coupling_folder, dir->d_name, NULL) );
-					//ui_set_statusbar(TRUE, "%s", dir->d_name);
+					cp(g_strconcat(addressbar_last_address, "/", dir->d_name, NULL), g_strconcat(coupling_folder,couppath,coupusage,material,dir->d_name, NULL) );
+					ui_set_statusbar(TRUE, "%s", dir->d_name);
 				}
 		
 			}
 			closedir(d);
 		}
 	}
-
+	
 	regfree(&regex);
 	regfree(&regexasterix);
 	on_menu_refresh(NULL,NULL);	
 }
 
+static void coupfolderchooser(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user_data)
+{
+	
+	gint index;
+	index = gtk_combo_box_get_active(combobox);
+	switch ( index )
+	{
+		case 0:
+			couppath = "/VULASTIK/L/";
+			break;
+		case 1:
+			couppath = "/VULASTIK/XT/";
+			break;
+		case 2:
+			couppath = "/VULKARDAN/F/";
+			break;
+		case 3:
+			couppath = "/VULKARDAN/E/";
+			break;
+		case 4:
+			couppath = "/VULKARDAN/E/";
+			break;
+		case 5:
+			couppath = "/RATO/S/";
+			break;
+		case 6:
+			couppath = "/RATO/R/";
+			break;
+		case 7:
+			couppath = "/RATO/DS/";
+			break;
+		default:
+			printf("default\n");
+	}
+}
+
+static void coupusagechooser(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user_data)
+{
+	gint index;
+	index = gtk_combo_box_get_active(combobox);
+	switch ( index )
+	{
+		case 0:
+			coupusage = "Marine/";
+			break;
+		case 1:
+			coupusage = "Industrie/";
+			break;
+		default:
+			printf("default\n");
+	}
+}
+
+static void fill_combocoup_entry (GtkWidget *combo)
+{
+ 
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Vula L"); //0
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Vula XT");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Vulk F");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Vulk E free");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Vulk E bell");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Rato S");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Rato R");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Rato DS");
+}
+
+static void fill_combocoupusage_entry (GtkWidget *combo)
+{
+ 
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Marine"); //0
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Industrie");
+}
+
 static void make_coupbar(void)
 {
-	GtkWidget *wid, *toolbar;
-	GtkWidget *label, *top;
+	GtkWidget *wid, *toolbar, *combocopubox;
+	GtkWidget *label, *top, *choosecouptype, *chooseusagetype, *combocoupbox;
 	top = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
 	coupbar = gtk_box_new(GTK_ORIENTATION_VERTICAL, 1);
+	combocoupbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 1);
 
 	label = gtk_label_new(_("Kupplungsbezeichner:"));
+	
+	choosecouptype = gtk_combo_box_text_new();
+    fill_combocoup_entry (choosecouptype);
+	g_signal_connect(choosecouptype, "changed", G_CALLBACK(coupfolderchooser), NULL);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(choosecouptype),0);
+
+	chooseusagetype = gtk_combo_box_text_new();
+    fill_combocoupusage_entry (chooseusagetype);
+	g_signal_connect(chooseusagetype, "changed", G_CALLBACK(coupusagechooser), NULL);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(chooseusagetype),0);
+
+	gtk_box_pack_start(GTK_BOX(combocoupbox), choosecouptype, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(combocoupbox), chooseusagetype, TRUE, FALSE, 0);
 
 	coupentry = gtk_entry_new();
 	gtk_entry_set_placeholder_text( GTK_ENTRY(coupentry),"X3012, F5014, ... ");
@@ -2704,6 +2817,7 @@ static void make_coupbar(void)
 
 	gtk_box_pack_start(GTK_BOX(coupbar), label, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(coupbar), coupentry, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(coupbar), combocoupbox, TRUE, TRUE, 0);
 
 	// //g_signal_connect(filter_combo, "changed", G_CALLBACK(ui_combo_box_changed), NULL);
 
@@ -2726,7 +2840,7 @@ static void make_tvcbar(void)
 	//gtk_toolbar_set_style(GTK_TOOLBAR(topsub2), GTK_TOOLBAR_ICONS);
 
 	choosereportstyle = gtk_combo_box_text_new();
-    fill_combo_entry (choosereportstyle);
+    fill_comboreport_entry (choosereportstyle);
 	g_signal_connect(choosereportstyle, "changed", G_CALLBACK(set_report_style), NULL);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(choosereportstyle),0);
 	gtk_box_pack_start(GTK_BOX(topsub2), choosereportstyle, FALSE, FALSE, 0);
