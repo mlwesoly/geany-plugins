@@ -336,7 +336,7 @@ static void on_calculateX(int Stellen)
 				char buf2[50];
 				int line = sci_get_line_from_position(sci, selection_end);
 				int line_end = sci_get_line_end_position(sci,line);
-				sprintf(buf2, "  %.2f@%.2f°C", Pkv30, Pkvtemp);
+				sprintf(buf2, "  %.2f@%.3f°C", Pkv30, Pkvtemp);
 				//sprintf(buf, " test");
 				sci_insert_text(sci, line_end, buf2);
 			}
@@ -500,8 +500,8 @@ static void count_all_springdamperlines(char * tempStr)
 	int retim,retid;
 	
 	//element 2. 
-    retim = regcomp(&regexm, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 2((\n)*.*)", REG_EXTENDED);
-    retid = regcomp(&regexd, "^22[0-9][0-9] .*", REG_EXTENDED); // liest nicht immer alle 
+    retim = regcomp(&regexm, "^(1[0-9]{3}) +('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 2((\n)*.*)", REG_EXTENDED);
+    retid = regcomp(&regexd, "^22[0-9]{2}([ ]+.*){5,}", REG_EXTENDED); // liest nicht immer alle 
 
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);
 	if (!retim) {
@@ -524,7 +524,7 @@ static void count_all_gearmeshlines(char * tempStr)
 	
 	//Gear Meshes
 	retim = regcomp(&regexm, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 10(.*)", REG_EXTENDED);
-    retid = regcomp(&regexd, "^410[0-9] .*([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
+    retid = regcomp(&regexd, "^41[0-9]{2} +.*([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
 
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);
 	if (!retim) {
@@ -545,8 +545,8 @@ static void count_all_hookejointslines(char * tempStr)
 	int retim,retid;
 	
 	//Hooke
-	retim = regcomp(&regexm, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 12(.*)", REG_EXTENDED);
-    retid = regcomp(&regexd, "^42[0-9][0-9] *([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
+	retim = regcomp(&regexm, "^(1[0-9]{3}) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 12(.*)", REG_EXTENDED);
+    retid = regcomp(&regexd, "^42[0-9]{2} +([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
 
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);
 	if (!retim) {
@@ -571,8 +571,8 @@ static void count_all_pointstoevaluatelines(char * tempStr)
 	char systemanz[5];
 
 	//Systemstellen auszuwerten
-	retid = regcomp(&regexd, "^3100 * '(systems|SYSTEMS)' *([0-9]+).*", REG_EXTENDED); // issue: erkennt die nummer nicht
-    retim = regcomp(&regexm, "^31[0-9][0-9] *[0-9]{1,4} .*", REG_EXTENDED);
+	retid = regcomp(&regexd, "^3100 +'(systems|SYSTEMS)' +([0-9]+).*", REG_EXTENDED);
+    retim = regcomp(&regexm, "^31[0-9]{2} +[0-9]{1,4} +.*", REG_EXTENDED);
 	
 	retid = regexec(&regexd, tempStr, maxGroups, groupArray, 0);
 	if (!retid) {
@@ -598,7 +598,7 @@ static void minimal_rpm_engine(char * tempStr)
 	int retim;
 
 	// ist die minimaldrehzahl im modell?
-	retim = regcomp(&regexm, "^(211[0-9]) *([+-]?([0-9]+[.])+[0-9]+ *){2} *[0-9] *[0-9] *([+-]?([0-9]+[.])+[0-9]+ *){2} *((\n).*)", REG_EXTENDED);
+	retim = regcomp(&regexm, "^(211[0-9]) +([+-]?([0-9]+[.])+[0-9]+ *){2} *[0-9] *[0-9] *([+-]?([0-9]+[.])+[0-9]+ *){2} *((\n).*)", REG_EXTENDED);
 	
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);
 	if (!retim) {
@@ -614,7 +614,7 @@ static void count_all_zerostiffnesses(char * tempStr)
 	int retim;
 
 	// wenn steifigkeit 0 oder 0.0 dann muss element in der zeile sein
-	retim = regcomp(&regexm, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)) [0]+([.][0]*)* *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)) ([0-3]|[5-9])((\n)*.*)", REG_EXTENDED);
+	retim = regcomp(&regexm, "^(1[0-9][0-9][0-9]) +('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)) [0]+([.][0]*)* *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)) ([0-3]|[5-9])((\n)*.*)", REG_EXTENDED);
    
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);
 	if (!retim) {
