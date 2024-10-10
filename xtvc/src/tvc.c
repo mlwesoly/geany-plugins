@@ -598,7 +598,7 @@ static void minimal_rpm_engine(char * tempStr)
 	int retim;
 
 	// ist die minimaldrehzahl im modell?
-	retim = regcomp(&regexm, "^(211[0-9]) +([+-]?([0-9]+[.])+[0-9]+ *){2} *[0-9] *[0-9] *([+-]?([0-9]+[.])+[0-9]+ *){2} *((\n).*)", REG_EXTENDED);
+	retim = regcomp(&regexm, "^(211[0-9]) +([+-]?([0-9]+[.])+[0-9]+ *){2} *[0-9] *[0-9] *([+-]?([0-9]+[.])+[0-9]+ *){2} *$", REG_EXTENDED);
 	
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);
 	if (!retim) {
