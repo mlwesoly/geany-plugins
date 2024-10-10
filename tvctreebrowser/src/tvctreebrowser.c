@@ -1086,10 +1086,10 @@ static void
 on_menu_open_nautilus(GtkMenuItem *menuitem, const gchar *uri)
 { 
 	gchar *cwd;
-	if (g_file_test(uri, G_FILE_TEST_EXISTS))
-		cwd = g_file_test(uri, G_FILE_TEST_IS_DIR) ? g_strdup(uri) : g_path_get_dirname(uri);
-	else
-		cwd = g_strdup(addressbar_last_address);
+	//if (g_file_test(uri, G_FILE_TEST_EXISTS))
+	//	cwd = g_file_test(uri, G_FILE_TEST_IS_DIR) ? g_strdup(uri) : g_path_get_dirname(uri);
+	//else
+	cwd = g_strdup(addressbar_last_address);
 		
 	char* argument_list[] = {addressbar_last_address , NULL};
 	spawn_async(cwd, CONFIG_OPEN_NAUTILUS, argument_list, NULL, NULL, NULL);
@@ -1381,8 +1381,8 @@ create_popup_menu(const gchar *name, const gchar *uri)
 	item = ui_image_menu_item_new(GTK_STOCK_OPEN, _("Open N_autilus"));
 #endif
 	gtk_container_add(GTK_CONTAINER(menu), item);
-	g_signal_connect_data(item, "activate", G_CALLBACK(on_menu_open_nautilus), g_strdup(uri), (GClosureNotify)g_free, 0);
-	gtk_widget_set_sensitive(item, is_exists);
+	g_signal_connect_data(item, "activate", G_CALLBACK(on_menu_open_nautilus), g_strdup(addressbar_last_address), (GClosureNotify)g_free, 0);
+	gtk_widget_set_sensitive(item, g_file_test(addressbar_last_address, G_FILE_TEST_EXISTS));
 
 
 #if GTK_CHECK_VERSION(3, 10, 0)
