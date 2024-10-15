@@ -180,6 +180,10 @@ static gboolean save_settings(void);
 
 static void make_tvcbar(void);
 static void make_coupbar(void);
+static void on_menu_fillreport(GtkMenuItem *menuitem, gpointer *user_data);
+static void on_menu_executescript(GtkMenuItem *menuitem, gpointer *user_data);
+static void on_menu_getfilename(GtkMenuItem *menuitem, gpointer *user_data);
+
 
 /* ------------------
  * PLUGIN CALLBACKS
@@ -1346,6 +1350,40 @@ create_popup_menu(const gchar *name, const gchar *uri)
 	gboolean is_document 	= document_find_by_filename(uri) != NULL ? TRUE : FALSE;
 
 #if GTK_CHECK_VERSION(3, 10, 0)
+	item = ui_image_menu_item_new("fill-report", _("_FillReport"));
+#else
+	item = ui_image_menu_item_new(GTK_STOCK_DELETE, _("_FillReport"));
+#endif
+	gtk_container_add(GTK_CONTAINER(menu), item);
+	g_signal_connect(item, "activate", G_CALLBACK(on_menu_fillreport), NULL);
+	gtk_widget_set_sensitive(item, is_exists);
+
+#if GTK_CHECK_VERSION(3, 10, 0)
+	item = ui_image_menu_item_new("execute-script", _("_ExecuteScript"));
+#else
+	item = ui_image_menu_item_new(GTK_STOCK_DELETE, _("_ExecuteScript"));
+#endif
+	gtk_container_add(GTK_CONTAINER(menu), item);
+	g_signal_connect(item, "activate", G_CALLBACK(on_menu_executescript), NULL);
+	gtk_widget_set_sensitive(item, is_exists);
+
+	item = gtk_separator_menu_item_new();
+	gtk_container_add(GTK_CONTAINER(menu), item); 
+
+#if GTK_CHECK_VERSION(3, 10, 0)
+	item = ui_image_menu_item_new("get-filename", _("_GetFilename"));
+#else
+	item = ui_image_menu_item_new(GTK_STOCK_DELETE, _("_GetFilename"));
+#endif
+	gtk_container_add(GTK_CONTAINER(menu), item);
+	g_signal_connect(item, "activate", G_CALLBACK(on_menu_getfilename), NULL);
+	gtk_widget_set_sensitive(item, is_exists);
+
+	item = gtk_separator_menu_item_new();
+	gtk_container_add(GTK_CONTAINER(menu), item);
+
+
+#if GTK_CHECK_VERSION(3, 10, 0)
 	item = ui_image_menu_item_new("go-up", _("Go _Up"));
 #else
 	item = ui_image_menu_item_new(GTK_STOCK_GO_UP, _("Go _Up"));
@@ -2445,6 +2483,126 @@ static void finalizereport(void)
 
 	on_menu_refresh(NULL,NULL);
 }
+
+static void on_menu_executescript(GtkMenuItem *menuitem, gpointer *user_data)
+{
+	GtkTreeSelection 	*selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
+	GtkTreeIter 		iter, iter_parent;
+	GtkTreeModel 		*model;
+	gchar 				*uri, *uri_parent;
+	gchar				*command;
+
+	if (! gtk_tree_selection_get_selected(selection, &model, &iter))
+		return;
+
+	gtk_tree_model_get(model, &iter, TREEBROWSER_COLUMN_NAME, &uri, -1);
+
+	//if (CONFIG_ON_DELETE_CLOSE_FILE && !g_file_test(uri, G_FILE_TEST_IS_DIR))
+	//	document_close(document_find_by_filename(uri));
+
+	uri_parent = g_path_get_dirname(uri);
+	// char* command = "WinRun";
+	char* argument_list[] = {"gnome-terminal", uri, NULL};
+	// command = g_strconcat("gnome-terminal -- bash -c '", "cd ",addressbar_last_address,";WinRun ./", uri,"; exec bash'" , NULL); 
+	command = g_strconcat("gnome-terminal -- bash -c '", "cd ",addressbar_last_address,";RunTVC ./", uri,"; exec bash'" , NULL); 
+	// gnome-terminal -- bash -c "<my command or script>; exec bash"
+	// printf("%s %s",addressbar_last_address, command);
+	// fflush(stdout);
+	// TODO: Here i need to get the correct environment otherwise ini not found
+	spawn_async(addressbar_last_address, command,NULL,NULL,NULL,NULL);
+	/*int pid = fork();
+	if (pid == 0) {
+		// Newly spawned child Process.
+		int status_code = execvp(command, argument_list);
+		
+		if (status_code == -1) {
+			printf("Terminated Incorrectly\n");
+			return;
+		}
+	}
+	else {
+		// Old Parent process. The C program will come here
+		printf("This line will be printed\n");
+	}
+	waitpid(pid, NULL, 0);
+	*/
+	if (gtk_tree_model_iter_parent(GTK_TREE_MODEL(treestore), &iter_parent, &iter))
+		treebrowser_browse(uri_parent, &iter_parent);
+	else
+		treebrowser_browse(uri_parent, NULL);
+	g_free(uri_parent);
+	
+	g_free(uri);
+	on_menu_refresh(NULL,NULL);
+}
+
+static void on_menu_getfilename(GtkMenuItem *menuitem, gpointer *user_data)
+{
+	GtkTreeSelection 	*selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
+	GtkTreeIter 		iter, iter_parent;
+	GtkTreeModel 		*model;
+	gchar 				*uri;
+
+	if (! gtk_tree_selection_get_selected(selection, &model, &iter))
+		return;
+	gtk_tree_model_get(model, &iter, TREEBROWSER_COLUMN_NAME, &uri, -1);
+
+	GtkClipboard *cb = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+	gtk_clipboard_set_text(cb, uri, -1);
+	
+	g_free(uri);
+	on_menu_refresh(NULL,NULL);
+}
+
+
+static void on_menu_fillreport(GtkMenuItem *menuitem, gpointer *user_data)
+{
+	GtkTreeSelection 	*selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
+	GtkTreeIter 		iter, iter_parent;
+	GtkTreeModel 		*model;
+	gchar 				*uri, *uri_parent;
+
+	if (! gtk_tree_selection_get_selected(selection, &model, &iter))
+		return;
+
+	gtk_tree_model_get(model, &iter, TREEBROWSER_COLUMN_URI, &uri, -1);
+
+	if (CONFIG_ON_DELETE_CLOSE_FILE && !g_file_test(uri, G_FILE_TEST_IS_DIR))
+		document_close(document_find_by_filename(uri));
+
+	uri_parent = g_path_get_dirname(uri);
+		char* command = "/home/tvc/PycharmProjects/PrepareReport/main.py";
+	char* argument_list[] = {"/home/tvc/PycharmProjects/PrepareReport/main.py", addressbar_last_address, uri, NULL};
+	printf("%s", uri);
+	
+	int pid = fork();
+	if (pid == 0) {
+		// Newly spawned child Process.
+		int status_code = execvp(command, argument_list);
+		
+		if (status_code == -1) {
+			printf("Terminated Incorrectly\n");
+			return;
+		}
+	}
+	else {
+		// Old Parent process. The C program will come here
+		printf("This line will be printed\n");
+	}
+	waitpid(pid, NULL, 0);
+	//fs_remove(uri, TRUE);
+	if (gtk_tree_model_iter_parent(GTK_TREE_MODEL(treestore), &iter_parent, &iter))
+		treebrowser_browse(uri_parent, &iter_parent);
+	else
+		treebrowser_browse(uri_parent, NULL);
+	g_free(uri_parent);
+	
+	g_free(uri);
+	on_menu_refresh(NULL,NULL);
+}
+
+
+
 
 static void makereport_copy(void)
 {
