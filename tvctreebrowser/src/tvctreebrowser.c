@@ -183,7 +183,7 @@ static void make_coupbar(void);
 static void on_menu_fillreport(GtkMenuItem *menuitem, gpointer *user_data);
 static void on_menu_executescript(GtkMenuItem *menuitem, gpointer *user_data);
 static void on_menu_getfilename(GtkMenuItem *menuitem, gpointer *user_data);
-
+static void on_menu_executetvc(GtkMenuItem *menuitem, gpointer *user_data);
 
 /* ------------------
  * PLUGIN CALLBACKS
@@ -1367,6 +1367,15 @@ create_popup_menu(const gchar *name, const gchar *uri)
 	g_signal_connect(item, "activate", G_CALLBACK(on_menu_executescript), NULL);
 	gtk_widget_set_sensitive(item, is_exists);
 
+#if GTK_CHECK_VERSION(3, 10, 0)
+	item = ui_image_menu_item_new("execute-tvc", _("Execute_TVC"));
+#else
+	item = ui_image_menu_item_new(GTK_STOCK_DELETE, _("Execute_TVC"));
+#endif
+	gtk_container_add(GTK_CONTAINER(menu), item);
+	g_signal_connect(item, "activate", G_CALLBACK(on_menu_executetvc), NULL);
+	gtk_widget_set_sensitive(item, is_exists);
+
 	item = gtk_separator_menu_item_new();
 	gtk_container_add(GTK_CONTAINER(menu), item); 
 
@@ -2491,41 +2500,61 @@ static void on_menu_executescript(GtkMenuItem *menuitem, gpointer *user_data)
 	GtkTreeModel 		*model;
 	gchar 				*uri, *uri_parent;
 	gchar				*command;
+	GPid 				*child_pid;
+	//GError ** 	error_;
 
 	if (! gtk_tree_selection_get_selected(selection, &model, &iter))
 		return;
 
 	gtk_tree_model_get(model, &iter, TREEBROWSER_COLUMN_NAME, &uri, -1);
 
-	//if (CONFIG_ON_DELETE_CLOSE_FILE && !g_file_test(uri, G_FILE_TEST_IS_DIR))
-	//	document_close(document_find_by_filename(uri));
+	uri_parent = g_path_get_dirname(uri);
+
+	char* argument_list[] = {"gnome-terminal", uri, NULL};
+
+	// command = g_strconcat("gnome-terminal -- bash -c '", "cd ",addressbar_last_address,";WinRun ./", uri,"; exec bash'" , NULL); 
+	// TODO : adding a waiting command, for example return, then closing the terminal
+	command = g_strconcat("gnome-terminal -- bash -c '", "cd ", addressbar_last_address, "; ./", uri,"; exec bash'" , NULL); 
+	// command = g_strconcat("gnome-terminal -- bash -c '", "cd ",addressbar_last_address,";source /home/tvc/.proADD ; WinRun ./", uri,"; exec bash'" , NULL); 
+
+	spawn_async(NULL, command,NULL,NULL,child_pid,NULL);
+	
+	// wait until other process really ended 
+	//spawn_kill_process(child_pid,NULL);
+
+	if (gtk_tree_model_iter_parent(GTK_TREE_MODEL(treestore), &iter_parent, &iter))
+		treebrowser_browse(uri_parent, &iter_parent);
+	else
+		treebrowser_browse(uri_parent, NULL);
+	g_free(uri_parent);
+	
+	g_free(uri);
+	on_menu_refresh(NULL,NULL);
+}
+
+static void on_menu_executetvc(GtkMenuItem *menuitem, gpointer *user_data)
+{
+	GtkTreeSelection 	*selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
+	GtkTreeIter 		iter, iter_parent;
+	GtkTreeModel 		*model;
+	gchar 				*uri, *uri_parent;
+	gchar				*command;
+
+	if (! gtk_tree_selection_get_selected(selection, &model, &iter))
+		return;
+
+	gtk_tree_model_get(model, &iter, TREEBROWSER_COLUMN_NAME, &uri, -1);
 
 	uri_parent = g_path_get_dirname(uri);
-	// char* command = "WinRun";
+
 	char* argument_list[] = {"gnome-terminal", uri, NULL};
+	// TODO : adding a waiting command, for example return, then closing the terminal
 	// command = g_strconcat("gnome-terminal -- bash -c '", "cd ",addressbar_last_address,";WinRun ./", uri,"; exec bash'" , NULL); 
-	command = g_strconcat("gnome-terminal -- bash -c '", "cd ",addressbar_last_address,";RunTVC ./", uri,"; exec bash'" , NULL); 
-	// gnome-terminal -- bash -c "<my command or script>; exec bash"
-	// printf("%s %s",addressbar_last_address, command);
-	// fflush(stdout);
-	// TODO: Here i need to get the correct environment otherwise ini not found
-	spawn_async(addressbar_last_address, command,NULL,NULL,NULL,NULL);
-	/*int pid = fork();
-	if (pid == 0) {
-		// Newly spawned child Process.
-		int status_code = execvp(command, argument_list);
-		
-		if (status_code == -1) {
-			printf("Terminated Incorrectly\n");
-			return;
-		}
-	}
-	else {
-		// Old Parent process. The C program will come here
-		printf("This line will be printed\n");
-	}
-	waitpid(pid, NULL, 0);
-	*/
+	// command = g_strconcat("gnome-terminal -- bash -c '", "cd ",addressbar_last_address,"; ./", uri,"; exec bash'" , NULL); 
+	command = g_strconcat("gnome-terminal -- bash -c '", "cd ",addressbar_last_address,";source /home/tvc/.proADD ; WinRun ./", uri,"; exec bash'" , NULL); 
+
+	spawn_async(NULL, command,NULL,NULL,NULL,NULL);
+
 	if (gtk_tree_model_iter_parent(GTK_TREE_MODEL(treestore), &iter_parent, &iter))
 		treebrowser_browse(uri_parent, &iter_parent);
 	else
