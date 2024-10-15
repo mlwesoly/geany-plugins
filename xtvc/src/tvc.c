@@ -116,8 +116,9 @@ void overwrite_block_spaces()
 	size_t length, lend;
 	gchar *buffer;
 
-	//ui_set_statusbar(TRUE,"%d %d",xinsert,xend);
-	//ui_set_statusbar(TRUE,"%d %d",start_pos,end_pos);
+	ui_set_statusbar(TRUE,"startline %d %d",start_line,end_line);
+	ui_set_statusbar(TRUE,"xinsert %d %d",xinsert,xend);  // xinsert xend 
+	ui_set_statusbar(TRUE,"startpos %d %d",start_pos,end_pos);
 
 	if (xend < xinsert)
 		xinsert = xend;
@@ -147,9 +148,10 @@ void overwrite_block_spaces()
 	}
 	sci_start_undo_action(sci);
 	sci_replace_sel(sci, "");
-	buffer = g_new(gchar, (xend-xinsert)/8);
-	buffer[length-1] = '\0';
-	//gchar *text = sci_get_selection_contents(sci);
+	buffer = g_new(gchar, (((xend-xinsert)/8)));
+	length=(xend-xinsert)/8;
+	buffer[length] = '\0';
+	
 	memset(buffer,' ', ((xend-xinsert)/8)-1);
 
 	for (line = start_line, i = 0; line <= end_line; line++, i++)
@@ -160,19 +162,9 @@ void overwrite_block_spaces()
 			continue;
 
 		insert_pos = sci_get_position_from_line(sci, line) + line_pos[i];
-
 		sci_insert_text(sci, insert_pos, buffer);
-		//ui_set_statusbar(TRUE,"%s",line);
-		/*if (cancel && i % 1000 == 0)
-		{
-			update_display();
-			if (*cancel)
-			{
-				scintilla_send_message(sci, SCI_GOTOPOS, insert_pos + length, 0);
-				break;
-			}
-		}*/
 	}
+
 	sci_end_undo_action(sci);
 	g_free(line_pos);
 }
