@@ -89,7 +89,7 @@ enum
 	CALCULATE8_KB,
 	CALCULATE9_KB,
 	CALCULATE10_KB,
-	OVERWRITE_WITH_SPACES_KB,
+	//OVERWRITE_WITH_SPACES_KB,
 	OVERWRITE_BLOCK_SPACES_KB,
 	COUNT_KB
 };
@@ -98,6 +98,10 @@ enum
 	scintilla_send_message(sci, SCI_POINTXFROMPOSITION, 0, position)
 #define sci_get_pos_at_line_sel_start(sci, line) \
 	scintilla_send_message(sci, SCI_GETLINESELSTARTPOSITION, line, 0)
+#define sci_get_pos_at_line_sel_end(sci, line) \
+	scintilla_send_message(sci, SCI_GETLINESELENDPOSITION, line, 0)
+
+	
 
 static void update_display(void)
 {
@@ -110,15 +114,17 @@ void overwrite_block_spaces()
 	GeanyDocument *doc = document_get_current();
 	ScintillaObject *sci = doc->editor->sci;
 
-	gint start_pos = sci_get_selection_start(sci);
-	gint start_line = sci_get_line_from_position(sci, start_pos);
-	gint end_pos = sci_get_selection_end(sci);
-	gint end_line = sci_get_line_from_position(sci, end_pos);
+	gint start_pos = sci_get_selection_start(sci); // startpos der auswahl
+	gint start_line = sci_get_line_from_position(sci, start_pos); //startzeile
+	gint end_pos = sci_get_selection_end(sci); // endpos der auswahl
+	gint end_line = sci_get_line_from_position(sci, end_pos); //endzeile
 
 	gint xinsert = sci_point_x_from_position(sci, start_pos);
 	gint xend = sci_point_x_from_position(sci, end_pos);
-	gint *line_pos = g_new(gint, end_line - start_line + 1);
+	gint insertcol = sci_get_pos_at_line_sel_start(sci, start_line);
+	gint endcol = sci_get_pos_at_line_sel_end(sci, start_line);
 
+	gint *line_pos = g_new(gint, end_line - start_line + 1);
 
 	gint line, i;
 	gint64 start_value=1;
@@ -126,11 +132,11 @@ void overwrite_block_spaces()
 	gint64 value;
 	unsigned count = 0;
 	size_t length, lend;
-	gchar *buffer;
+	
 
-	ui_set_statusbar(TRUE,"startline %d %d",start_line,end_line);
-	ui_set_statusbar(TRUE,"xinsert %d %d",xinsert,xend);  // xinsert xend 
-	ui_set_statusbar(TRUE,"startpos %d %d",start_pos,end_pos);
+	// ui_set_statusbar(TRUE,"startline %d %d",start_line,end_line);
+	// ui_set_statusbar(TRUE,"xinsert %d %d => %d ",xinsert,xend,xend-xinsert-1);  // xinsert xend 
+	// ui_set_statusbar(TRUE,"startpos %d %d",start_pos,end_pos);
 
 	if (xend < xinsert)
 		xinsert = xend;
@@ -146,25 +152,15 @@ void overwrite_block_spaces()
 		}
 		else
 			line_pos[i] = -1;
-
-		/*if (cancel && i % 2500 == 0)
-		{
-			update_display();
-			if (*cancel)
-			{
-				ui_progress_bar_stop();
-				g_free(line_pos);
-				return;
-			}
-		}*/
 	}
+	
 	sci_start_undo_action(sci);
 	sci_replace_sel(sci, "");
-	buffer = g_new(gchar, (((xend-xinsert)/8)));
-	length=(xend-xinsert)/8;
+
+	gchar buffer[endcol-insertcol];
+	memset(buffer,' ',(endcol-insertcol));
+	length=(endcol-insertcol);
 	buffer[length] = '\0';
-	
-	memset(buffer,' ', ((xend-xinsert)/8)-1);
 
 	for (line = start_line, i = 0; line <= end_line; line++, i++)
 	{
@@ -178,9 +174,11 @@ void overwrite_block_spaces()
 	}
 
 	sci_end_undo_action(sci);
+	
 	g_free(line_pos);
 }
 
+/*
 void overwrite_with_spaces()
 {
 	GeanyDocument *doc = document_get_current();
@@ -202,7 +200,7 @@ void overwrite_with_spaces()
 			g_free(text);
 		}
 	}
-}
+}*/
 
 static void on_calculateX(int Stellen)
 {
@@ -1265,8 +1263,8 @@ void plugin_init(G_GNUC_UNUSED GeanyData *data)
 		0, 0, "overwrite_block_spaces", _("overwrite_block_spaces"), NULL);
 
 	
-	keybindings_set_item(plugin_key_group, OVERWRITE_WITH_SPACES_KB, overwrite_with_spaces, 
-		0, 0, "overwrite_with_spaces", _("overwrite_with_spaces"), NULL);
+	//keybindings_set_item(plugin_key_group, OVERWRITE_WITH_SPACES_KB, overwrite_with_spaces, 
+	//	0, 0, "overwrite_with_spaces", _("overwrite_with_spaces"), NULL);
 
 	keybindings_set_item(plugin_key_group, PERCENT_OF_RATEDSPEED_KB, percent_of_ratedspeed,
 		0, 0, "percent_of_ratedspeed", _("percent_of_ratedspeed"), NULL);
