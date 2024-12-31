@@ -2093,6 +2093,7 @@ create_sidebar(void)
 	GtkWidget 			*toolbar,*tvctoolbar;
 	GtkWidget 			*wid;
 	GtkTreeSelection 	*selection;
+	int showaddition=0;
 	
 
 #if GTK_CHECK_VERSION(3, 0, 0)
@@ -2132,10 +2133,12 @@ create_sidebar(void)
 		if(!strcmp(username,"wesolym")){
 			make_tvcbar();
 			make_coupbar();
+			showaddition=1;
 		}
 	}else{
-		printf("Envvar nicht gefunden");
-		fflush(stdout);
+		make_tvcbar();
+		make_coupbar();
+		showaddition=1;
 	}
 
 
@@ -2224,7 +2227,7 @@ create_sidebar(void)
 	{
 		gtk_box_pack_start(GTK_BOX(sidebar_vbox), 				scrollwin, 			TRUE,  TRUE,  1);
 		gtk_box_pack_start(GTK_BOX(sidebar_vbox), 				sidebar_vbox_bars, 	FALSE, TRUE,  1);
-		if(!strcmp(username,"wesolym")){
+		if(showaddition==1){
 			gtk_box_pack_start(GTK_BOX(sidebar_vbox), coupbar, 	FALSE, TRUE,  1);
 		}
 	}
@@ -2232,7 +2235,7 @@ create_sidebar(void)
 	{
 		gtk_box_pack_start(GTK_BOX(sidebar_vbox), 				sidebar_vbox_bars, 	FALSE, TRUE,  1);
 		gtk_box_pack_start(GTK_BOX(sidebar_vbox), 				scrollwin, 			TRUE,  TRUE,  1);
-		if(!strcmp(username,"wesolym")){
+		if(showaddition==1){
 			gtk_box_pack_start(GTK_BOX(sidebar_vbox), coupbar, 	FALSE, TRUE,  1);
 		}
 	}
@@ -2337,6 +2340,7 @@ static void
 create_sidebar2(void)
 {
 	GtkWidget *label, *sidebar_vbox_propeller, *sidebar_vbox_filler, *sidebar_vbox_propellerbtn;
+	GtkWidget *sidebar_open_from_archives;
 	GtkWidget *calcbutton, *propresults, *infobutton;
 	GtkTextTagTable *texttagtable1;
 	GtkTextTag *texttag1;
@@ -2344,26 +2348,33 @@ create_sidebar2(void)
 
 	sidebar_vbox 			= gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
 	sidebar_vbox_propeller	= gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+	sidebar_open_from_archives	= gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
 	sidebar_vbox_propellerbtn	= gtk_box_new(GTK_ORIENTATION_HORIZONTAL,0);
 	sidebar_vbox_filler		= gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
 
 
+
+	// ----------- open drw number / open folder by tvc number ---------------- start
+	GtkWidget *label_drw = gtk_label_new(_("open drw"));
+	GtkWidget *drwnumber = gtk_entry_new();
+	gtk_entry_set_placeholder_text( GTK_ENTRY(drwnumber),"drw number");
+	ui_entry_add_clear_icon(GTK_ENTRY(drwnumber));
+
+
+
+	gtk_box_pack_start(GTK_BOX(sidebar_open_from_archives), label_drw, TRUE,  FALSE,  1);
+	gtk_box_pack_start(GTK_BOX(sidebar_open_from_archives), drwnumber, TRUE,  FALSE,  1);
 	// ----------- Propeller estimation --------------------------------------- start
 	label = gtk_label_new(_("Propeller:"));
-	
 	propsize = gtk_entry_new();
 	gtk_entry_set_placeholder_text( GTK_ENTRY(propsize),"Propsize in mm");
 	ui_entry_add_clear_icon(GTK_ENTRY(propsize));
 
 	calcbutton = gtk_button_new_with_label ("calculate J");
 	infobutton = gtk_button_new_with_label ("?");
-
 	//gtk_text_view_set_buffer (GTK_TEXT_VIEW(propresults),"-10% \n 100% \n +10%");
-
 	viewprop = gtk_text_view_new ();
-
 	bufferprop = gtk_text_view_get_buffer (GTK_TEXT_VIEW (viewprop));
-
 	gtk_text_buffer_set_text (bufferprop, "warte auf eingabe", -1);
 
 	g_signal_connect(infobutton, "clicked", G_CALLBACK(on_infobutton_activate), NULL);
@@ -2378,21 +2389,21 @@ create_sidebar2(void)
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox_propeller), sidebar_vbox_propellerbtn, TRUE,  FALSE,  1);
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox_propeller), viewprop, TRUE,  FALSE,  1);
 
-	gtk_box_pack_start(GTK_BOX(sidebar_vbox), sidebar_vbox_propeller, FALSE,  FALSE,  1);
 
 	// ----------- Propeller estimation --------------------------------------- end
 	// ----------- mech - electrical degree --------------------------------------- start
 	// mechanical <-> electrical degree umrechnen ( mit Klassenauswahl um limit zu bekommen oder hier eine link zu onenote quelle)
 
 
-
-	gtk_box_pack_start(GTK_BOX(sidebar_vbox), 				sidebar_vbox_filler, 			TRUE,  TRUE,  0);
+	gtk_box_pack_start(GTK_BOX(sidebar_vbox), sidebar_open_from_archives, FALSE,  FALSE,  1);
+	gtk_box_pack_start(GTK_BOX(sidebar_vbox), sidebar_vbox_propeller, FALSE,  FALSE,  1);
+	gtk_box_pack_start(GTK_BOX(sidebar_vbox), sidebar_vbox_filler,TRUE,  TRUE,  0);
 
 	gtk_widget_show_all(sidebar_vbox);
+
 	page_number2 = gtk_notebook_append_page(GTK_NOTEBOOK(geany->main_widgets->sidebar_notebook),
 							sidebar_vbox, gtk_label_new(_("Helper")));
 }
-
 
 #define GEANYTEST_STOCK "newreportodt"
 
@@ -2427,8 +2438,6 @@ static void fill_comboreport_entry (GtkWidget *combo)
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EMP");
   //gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "industry");
 }
-
-
 
 static void copynewreport(void)
 {
@@ -2583,7 +2592,6 @@ static void on_menu_getfilename(GtkMenuItem *menuitem, gpointer *user_data)
 	on_menu_refresh(NULL,NULL);
 }
 
-
 static void on_menu_fillreport(GtkMenuItem *menuitem, gpointer *user_data)
 {
 	GtkTreeSelection 	*selection = gtk_tree_view_get_selection(GTK_TREE_VIEW(treeview));
@@ -2630,9 +2638,6 @@ static void on_menu_fillreport(GtkMenuItem *menuitem, gpointer *user_data)
 	on_menu_refresh(NULL,NULL);
 }
 
-
-
-
 static void makereport_copy(void)
 {
 	gchar *locale_path;
@@ -2672,7 +2677,6 @@ static void makereport_copy(void)
 
 	on_menu_refresh(NULL,NULL);
 }
-
 
 static void update_current_shell(void)
 {
