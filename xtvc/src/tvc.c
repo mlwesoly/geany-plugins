@@ -55,6 +55,14 @@ static int minrpmofenginedefined=0;
 static int hookejointsmodel=0;
 static int hookejointsdefined=0;
 static int zerostiffnessesinmodel=0;
+static int freqdepdampmodel=0;
+static int freqdepdampdefined=0;
+static int freqdepdampdefinedd=0;
+static int viskodampermodel=0;
+static int viskodamperdefined=0;
+static int propsmodel=0;
+static int propsdefined=0;
+static int number_of_powercurves=0;
 
 static GtkWidget *s_context_sep_item, *s_context_checkinput_item, *s_context_recount_item;
 
@@ -400,7 +408,6 @@ static void on_calculaten()
 }
 */
 
-
 static void on_calculateY1()
 {
 	on_calculateX(1);
@@ -469,7 +476,13 @@ static void reset_all_countingvalues()
 	hookejointsmodel=0;
 	hookejointsdefined=0;
 	zerostiffnessesinmodel=0;
-
+	freqdepdampmodel=0;
+	freqdepdampdefined=0;
+	freqdepdampdefinedd=0;
+	viskodampermodel=0;
+	viskodamperdefined=0;
+	propsmodel=0;
+	propsdefined=0;
 }
 
 static void count_all_modellines(char * tempStr)
@@ -477,7 +490,7 @@ static void count_all_modellines(char * tempStr)
 	regex_t regex;
 	int reti;
 
-	reti = regcomp(&regex, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} [0-9]((\n)*.*)", REG_EXTENDED);
+	reti = regcomp(&regex, "^(1[0-9]{3}) +('.*') +([0-9]+[.]?[0-9]*) +(([^-][0-9]+[.]?[0-9]*)|-1) +([0-9]+[.]?[0-9]*) +[0-9]{1,2}.*", REG_EXTENDED);
 
 	reti = regexec(&regex, tempStr, 0, NULL, 0);
 	if (!reti) {
@@ -492,8 +505,8 @@ static void count_all_springdamperlines(char * tempStr)
 	int retim,retid;
 	
 	//element 2. 
-    retim = regcomp(&regexm, "^(1[0-9]{3}) +('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 2((\n)*.*)", REG_EXTENDED);
-    retid = regcomp(&regexd, "^22[0-9]{2}([ ]+.*){5,}", REG_EXTENDED); // liest nicht immer alle 
+    retim = regcomp(&regexm, "^(1[0-9]{3}) +('.*') +([0-9]+[.]?[0-9]*) +(([^-][0-9]+[.]?[0-9]*)|-1) +([0-9]+[.]?[0-9]*) +2(.*)", REG_EXTENDED);
+    retid = regcomp(&regexd, "^22[0-9]{2} +([0-9]+[.]?[0-9]*) +([-]?[0-9]+[.]?[0-9]*) +([0-9]+[.]?[0-9]*) +([0-9]+[.]?[0-9]*) +([0-9]+[.]?[0-9]*).*", REG_EXTENDED); // liest nicht immer alle 
 
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);
 	if (!retim) {
@@ -509,15 +522,69 @@ static void count_all_springdamperlines(char * tempStr)
 	regfree(&regexd);
 }
 
+static void count_all_viskodamperlines(char * tempStr)
+{
+	regex_t regexm, regexd;
+	int retim,retid;
+	
+	//element 2. 
+    retim = regcomp(&regexm, "^(1[0-9]{3}) +('.*') +([0-9]+[.]?[0-9]*) +(([^-][0-9]+[.]?[0-9]*)|-1) +([0-9]+[.]?[0-9]*) +5(.*)", REG_EXTENDED);
+    retid = regcomp(&regexd, "^25[0-9]{2} +([0-9]+[.]?[0-9]*) +([0-9]+[.]?[0-9]*).*", REG_EXTENDED);
+
+	retim = regexec(&regexm, tempStr, 0, NULL, 0);
+	if (!retim) {
+		viskodampermodel++;
+	}
+
+	retid = regexec(&regexd, tempStr, 0, NULL, 0);
+	if (!retid) {
+		viskodamperdefined++;
+	}
+
+	regfree(&regexm);
+	regfree(&regexd);
+}
+
+static void count_all_freqdepdamplines(char * tempStr)
+{
+	regex_t regexm, regexd, regexdd;
+	int retim,retid,retidd;
+	
+	//Gear Meshes
+	retim = regcomp(&regexm, "^(1[0-9]{3}) +('.*') +([0-9]+[.]?[0-9]*) +(([^-][0-9]+[.]?[0-9]*)|-1) +([0-9]+[.]?[0-9]*) +15(.*)", REG_EXTENDED);
+    retid = regcomp(&regexd, "^45[0-9]{2} +[0-9]+ +([+-]?([0-9]*[.])?[0-9]+) +([+-]?([0-9]*[.])?[0-9]+).*", REG_EXTENDED);
+	retidd = regcomp(&regexdd, "^45[0-9]{2} +[0-9]+ +([+-]?([0-9]*[.])?[0-9]+) +([+-]?([0-9]*[.])?[0-9]+) +[0-9]+ +([+-]?([0-9]*[.])?[0-9]+) +([+-]?([0-9]*[.])?[0-9]+).*", REG_EXTENDED);
+
+	retim = regexec(&regexm, tempStr, 0, NULL, 0);
+	if (!retim) {
+		freqdepdampmodel++;
+	}
+
+	retidd = regexec(&regexdd, tempStr, 0, NULL, 0);
+	if (!retidd) {
+		freqdepdampdefinedd++;
+	}
+	else
+	{
+		retid = regexec(&regexd, tempStr, 0, NULL, 0);
+		if (!retid) {
+			freqdepdampdefined++;
+		}
+	}
+
+	regfree(&regexm);
+	regfree(&regexd);
+}
+
 static void count_all_gearmeshlines(char * tempStr)
 {
 	regex_t regexm, regexd;
 	int retim,retid;
 	
 	//Gear Meshes
-	retim = regcomp(&regexm, "^(1[0-9][0-9][0-9]) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 10(.*)", REG_EXTENDED);
-    retid = regcomp(&regexd, "^41[0-9]{2} +.*([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
-
+	retim = regcomp(&regexm, "^(1[0-9]{3}) +('.*') +([0-9]+[.]?[0-9]*) +(([^-][0-9]+[.]?[0-9]*)|-1) +([0-9]+[.]?[0-9]*) +10(.*)", REG_EXTENDED);
+    retid = regcomp(&regexd, "^41[0-9]{2}( +(([a-zA-Z]{4})|([0-9]+[.]?[0-9]*)))+.*", REG_EXTENDED);
+	
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);
 	if (!retim) {
 		gearmeshesmodel++;
@@ -531,14 +598,67 @@ static void count_all_gearmeshlines(char * tempStr)
 	regfree(&regexd);
 }
 
+static void count_all_proplines(char * tempStr)
+{
+	regex_t regexm, regexd, regexd1, regexd2, regexp, regexp1, regexp2;
+	int retim,retid,retid1,retid2,retip,retip1,retip2;
+	
+	//TODO: not completed...missing is 2310 with 1 or 2
+	retim = regcomp(&regexm, "^(1[0-9]{3}) +('.*') +([0-9]+[.]?[0-9]*) +(([^-][0-9]+[.]?[0-9]*)|-1) +([0-9]+[.]?[0-9]*) +6(.*)", REG_EXTENDED);
+    
+	retid1 = regcomp(&regexd1, "^2310 +[0-9] +[0-9] +[1-2].*", REG_EXTENDED);
+	retid2 = regcomp(&regexd2, "^2310 [0-9] [0-9] 2.*", REG_EXTENDED);
+	retid = regcomp(&regexd, "^2310 +[0-9] +[0-9] +-1.*", REG_EXTENDED);
+	
+	retip1 = regcomp(&regexp1, "^2335 +.*([+-]?([0-9]*[.])?[0-9]+ *)* .*", REG_EXTENDED);
+	retip2 = regcomp(&regexp2, "^2335 +.*([+-]?([0-9]*[.])?[0-9]+ *)* .*", REG_EXTENDED);
+	retip = regcomp(&regexp, "^261[0-9]( +(([a-zA-Z]{4})|([0-9]+[.]?[0-9]*)))+.*", REG_EXTENDED);
+	/*
+	if line 2130 has a 1 or 2 then prop def next line
+	if line 2130 has a -1 then read for line 2610 
+	prop can be 
+	*/
+	retim = regexec(&regexm, tempStr, 0, NULL, 0);
+	if (!retim) {
+		propsmodel++;
+	}
+
+	retid1 = regexec(&regexp1, tempStr, 0, NULL, 0);
+	retid2 = regexec(&regexp2, tempStr, 0, NULL, 0);
+	retid = regexec(&regexp, tempStr, 0, NULL, 0);
+	
+	if (!retid1) {
+		retip1 = regexec(&regexp1, tempStr, 0, NULL, 0);
+		if (!retip1) {
+			propsdefined++;
+		}
+	}
+	else if (!retid2) {
+		retip2 = regexec(&regexp2, tempStr, 0, NULL, 0);
+		if (!retip2) {
+			propsdefined++;
+		}
+		
+	}
+	else if (!retid) {
+		retip = regexec(&regexp, tempStr, 0, NULL, 0);
+		if (!retip) {
+			propsdefined++;
+		}
+	}
+
+	regfree(&regexm);
+	regfree(&regexd);
+}
+
 static void count_all_hookejointslines(char * tempStr)
 {
 	regex_t regexm, regexd;
 	int retim,retid;
 	
 	//Hooke
-	retim = regcomp(&regexm, "^(1[0-9]{3}) *('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)){3} 12(.*)", REG_EXTENDED);
-    retid = regcomp(&regexd, "^42[0-9]{2} +([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
+	retim = regcomp(&regexm, "^(1[0-9]{3}) +('.*') +([0-9]+[.]?[0-9]*) +(([^-][0-9]+[.]?[0-9]*)|-1) +([0-9]+[.]?[0-9]*) +12(.*)", REG_EXTENDED);
+    retid = regcomp(&regexd, "^42[0-9]{2} +([0-9]+[.]?[0-9]*) +([0-9]+[.]?[0-9]*).*", REG_EXTENDED);
 
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);
 	if (!retim) {
@@ -589,12 +709,33 @@ static void minimal_rpm_engine(char * tempStr)
 	regex_t regexm;
 	int retim;
 
-	// ist die minimaldrehzahl im modell?
-	retim = regcomp(&regexm, "^(211[0-9]) +([+-]?([0-9]+[.])+[0-9]+ *){2} *[0-9] *[0-9] *([+-]?([0-9]+[.])+[0-9]+ *){2} *$", REG_EXTENDED);
+	retim = regcomp(&regexm, "^(211[0-9]) +([0-9]+[.]?[0-9]*) +([0-9]+[.]?[0-9]*) +[0-9] +[0-9] +([0-9]+[.]?[0-9]*) +([0-9]+[.]?[0-9]*) +([0-9]+[.]?[0-9]*).*$", REG_EXTENDED);
 	
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);
 	if (!retim) {
 		minrpmofenginedefined=1;
+	}
+
+	regfree(&regexm);
+}
+
+static void count_all_number_of_powercurves(char * tempStr)
+{
+	regex_t regexm;
+	int retim;
+	int error;
+	size_t maxGroups = 3;
+	regmatch_t groupArray[maxGroups];
+	
+	retim = regcomp(&regexm, "^3200 +'BETRIEB' +[0-9]{1,2} +([0-9]).*$", REG_EXTENDED);
+
+	retim = regexec(&regexm, tempStr, maxGroups, groupArray, 0);
+	if (!retim) {
+		char sourcecopy[strlen(tempStr)+1];
+		strcpy(sourcecopy, tempStr);
+		sourcecopy[groupArray[1].rm_eo] = 0;
+		number_of_powercurves = atof(sourcecopy + groupArray[1].rm_so);
+		
 	}
 
 	regfree(&regexm);
@@ -606,8 +747,8 @@ static void count_all_zerostiffnesses(char * tempStr)
 	int retim;
 
 	// wenn steifigkeit 0 oder 0.0 dann muss element in der zeile sein
-	retim = regcomp(&regexm, "^(1[0-9][0-9][0-9]) +('.*')+ *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)) [0]+([.][0]*)* *(([+-]?([0-9]+[.])+[0-9]+ *)|( *-1 *)) ([0-3]|[5-9])((\n)*.*)", REG_EXTENDED);
-   
+	retim = regcomp(&regexm, "^1[0-9]{3} +('.*') +([0-9]+[.]?[0-9]*) +([0]+[.]?[0]*) +([0-9]+[.]?[0-9]*) +(1[0-9]|([0-3]|[5-9])).*", REG_EXTENDED);
+    // ^(1[0-9]{3}) +('.*') +([0-9]+[.]?[0-9]*) +(([^-][0-9]+[.]?[0-9]*)|-1) +([0-9]+[.]?[0-9]*) +12(.*)
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);
 	if (!retim) {
 		zerostiffnessesinmodel++;
@@ -629,27 +770,13 @@ static void on_tvc_check()
 
     const char * curLine = my_string;
 	
-	// wenn eine zeile 5 dann auch 2510 definition
-
-	// wenn eine zeile 15 dann auch 4150 definition, wenn zwei, dann mehr spalten
-
-	/*
-		first counting the elemente 15 elements
-		then checking if really 10 inputlines for the damper are there
-		?? checking if damperdata inside / 
-	*/
-
     // reti12 = regcomp(&regex13, "^410[0-9] .*([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
 	/* Execute regular expression */
 	/*
 	- if stiffness == 0.0 or 0, dann muss es auch element 4 sein
-	- motor testen: minimaldrehzahl vorhanden?
 	- 2130 falls 0, keine 2135 oder 26.. 
 		   falls 1,2 dann 2135 und 26..
 	- checking if everywhere same amount of power factors
-	- if 15 then there should be some definitions 
-	- if 5 then there should be a definition
-	- if 6 also check for definition
 	*/
 		
 	while(curLine)
@@ -664,7 +791,9 @@ static void on_tvc_check()
 
 			// Zaehlen der Gesamtanzahl der Modellzeilen
 			count_all_modellines(tempStr);
-			
+
+			count_all_number_of_powercurves(tempStr);
+
 			// Anzahl von damping lines im Modell
 			count_all_springdamperlines(tempStr);
 
@@ -675,14 +804,13 @@ static void on_tvc_check()
 			count_all_gearmeshlines(tempStr);
 
 			// Anzahl von 15 damper
-			// count_all_15damper(tempStr);
+			count_all_freqdepdamplines(tempStr);
 
 			// Anzahl von 5 damper
-			// count_all_5damper(tempStr);
+			count_all_viskodamperlines(tempStr);
 
 			// Anzahl von 6 Propeller
-			// auch testen ob -1 oder 1 oder 2 und davon abhaenging wo definiztion ist
-			// count_all_propeller(tempStr);
+			count_all_proplines(tempStr);
 
 			// hat das model eine minimaldrehzahl 
 			minimal_rpm_engine(tempStr);
@@ -705,9 +833,23 @@ static void on_tvc_check()
 	ui_set_statusbar(TRUE, "\n\t\t ---- Modellcheck :----");
 	ui_set_statusbar(TRUE, "\t Gesamtanzahl der Elemente vom Model \t %d", AnzahlModelLines);
 
-	ui_set_statusbar(TRUE, "\t\t ---- 2201 Damping Element (Elementtyp 2): ----");
-	ui_set_statusbar(TRUE, "\t im Modell \t %d", springdampmodel);
-	ui_set_statusbar(TRUE, "\t definiert \t %d ", springdampdefined);
+
+	if(number_of_powercurves>0){
+
+		ui_set_statusbar(TRUE, "\t number of powercurves \t %d ", number_of_powercurves);
+	}
+
+
+	ui_set_statusbar(TRUE, "\t\t ---- 3100 Systemstellen: ----");
+	ui_set_statusbar(TRUE, "\t auszuwerten \t %d ", systemlinestoevaluatedefined);
+	ui_set_statusbar(TRUE, "\t definiert \t %d ", systemlinestoevaluatemodel);
+	
+	if(springdampmodel>0 || springdampdefined>0)
+	{
+		ui_set_statusbar(TRUE, "\t\t ---- 2201 Damping Element (Elementtyp 2): ----");
+		ui_set_statusbar(TRUE, "\t im Modell \t %d", springdampmodel);
+		ui_set_statusbar(TRUE, "\t definiert \t %d ", springdampdefined);
+	}
 
 	if(gearmeshesmodel>0 || gearmeshesdefined>0)
 	{
@@ -723,11 +865,29 @@ static void on_tvc_check()
 		ui_set_statusbar(TRUE, "\t definiert \t %d ", hookejointsdefined);
 	}
 
-	ui_set_statusbar(TRUE, "\t\t ---- 3100 Systemstellen: ----");
-	ui_set_statusbar(TRUE, "\t auszuwerten \t %d ", systemlinestoevaluatedefined);
-	ui_set_statusbar(TRUE, "\t definiert \t %d ", systemlinestoevaluatemodel);
+	if(propsmodel>0 || propsdefined>0)
+	{
+		ui_set_statusbar(TRUE, "\t\t ---- 2610 Propellers (Elementtyp 6): ----");
+		ui_set_statusbar(TRUE, "\t im Modell \t %d ", propsmodel);
+		ui_set_statusbar(TRUE, "\t definiert \t %d ", propsdefined);
+	}
+	
+	if(viskodampermodel>0 || viskodamperdefined>0)
+	{
+		ui_set_statusbar(TRUE, "\t\t ---- 2501 viscous damper (Elementtyp 5): ----");
+		ui_set_statusbar(TRUE, "\t im Modell \t %d ", viskodampermodel);
+		ui_set_statusbar(TRUE, "\t definiert \t %d ", viskodamperdefined);
+	}
 
-	if(minrpmofenginedefined)
+	if(freqdepdampmodel>0 || freqdepdampdefined>0 || freqdepdampdefined>0)
+	{
+		ui_set_statusbar(TRUE, "\t\t ---- 4501 freq stiff damp (Elementtyp 15): ----");
+		ui_set_statusbar(TRUE, "\t im Modell \t %d ", freqdepdampmodel);
+		ui_set_statusbar(TRUE, "\t2x definiert \t %d ", freqdepdampdefinedd);
+		ui_set_statusbar(TRUE, "\t1x definiert \t %d ", freqdepdampdefined);
+	}
+
+	if(!minrpmofenginedefined)
 	{
 		ui_set_statusbar(TRUE, "\t\t--- Engine has no minimal rpm, please add at the end of line 2110");
 	}
