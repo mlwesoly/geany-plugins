@@ -63,6 +63,10 @@ static int viskodamperdefined=0;
 static int propsmodel=0;
 static int propsdefined=0;
 static int number_of_powercurves=0;
+static int couplingsmodel=0;
+static int couplingsdefined=0;
+static int cylindersmodel=0;
+static int cylindersdefined=0;
 
 static GtkWidget *s_context_sep_item, *s_context_checkinput_item, *s_context_recount_item;
 
@@ -483,6 +487,10 @@ static void reset_all_countingvalues()
 	viskodamperdefined=0;
 	propsmodel=0;
 	propsdefined=0;
+	couplingsmodel=0;
+    couplingsdefined=0;
+	cylindersmodel=0;
+	cylindersdefined=0;
 }
 
 static void count_all_modellines(char * tempStr)
@@ -673,6 +681,48 @@ static void count_all_hookejointslines(char * tempStr)
 	regfree(&regexd);
 }
 
+static void count_all_coupinglines(char * tempStr)
+{
+	regex_t regexm, regexd;
+	int retim,retid;
+	
+	retim = regcomp(&regexm, "^(1[0-9]{3}) +('.*') +([0-9]+[.]?[0-9]*) +(([^-][0-9]+[.]?[0-9]*)|-1) +([0-9]+[.]?[0-9]*) +4(.*)", REG_EXTENDED);
+    retid = regcomp(&regexd, "^24[0-9]{2}( +([a-zA-Z]{4}|([0-9]+[.]?[0-9]*))).*", REG_EXTENDED);
+
+	retim = regexec(&regexm, tempStr, 0, NULL, 0);
+	if (!retim) {
+		couplingsmodel++;
+	}
+	retid = regexec(&regexd, tempStr, 0, NULL, 0);
+	if (!retid) {
+		couplingsdefined++;
+	}
+
+	regfree(&regexm);
+	regfree(&regexd);
+}
+
+static void count_all_cylinderslines(char * tempStr)
+{
+	regex_t regexm, regexd;
+	int retim,retid;
+	
+	retim = regcomp(&regexm, "^(1[0-9]{3}) +('.*') +([0-9]+[.]?[0-9]*) +(([^-][0-9]+[.]?[0-9]*)|-1) +([0-9]+[.]?[0-9]*) +3(.*)", REG_EXTENDED);
+    retid = regcomp(&regexd, "^23[0-9]{2}( +(([0-9]+[.]?[0-9]*))){2}.*", REG_EXTENDED);
+
+	retim = regexec(&regexm, tempStr, 0, NULL, 0);
+	if (!retim) {
+		cylindersmodel++;
+	}
+	retid = regexec(&regexd, tempStr, 0, NULL, 0);
+	if (!retid) {
+		cylindersdefined++;
+	}
+
+	regfree(&regexm);
+	regfree(&regexd);
+}
+
 static void count_all_pointstoevaluatelines(char * tempStr)
 {
 	regex_t regexm, regexd;
@@ -757,88 +807,15 @@ static void count_all_zerostiffnesses(char * tempStr)
 	regfree(&regexm);
 }
 
-
-static void on_tvc_check()
+static void print_input_test_results()
 {
-	// gchar *my_string;
-	GeanyDocument *doc = document_get_current();
-	ScintillaObject *sci = doc->editor->sci;
-	gint len = sci_get_length(sci) + 1;
-	gchar *my_string = sci_get_contents(sci, len);
-
-	reset_all_countingvalues();
-
-    const char * curLine = my_string;
-	
-    // reti12 = regcomp(&regex13, "^410[0-9] .*([+-]?([0-9]*[.])?[0-9]+ *)*.*", REG_EXTENDED);
-	/* Execute regular expression */
-	/*
-	- if stiffness == 0.0 or 0, dann muss es auch element 4 sein
-	- 2130 falls 0, keine 2135 oder 26.. 
-		   falls 1,2 dann 2135 und 26..
-	- checking if everywhere same amount of power factors
-	*/
-		
-	while(curLine)
-    {
-      	const char * nextLine = strchr(curLine, '\n');
-      	int curLineLen = nextLine ? (nextLine-curLine) : strlen(curLine);
-      	char * tempStr = (char *) malloc(curLineLen+1);
-		if (tempStr)
-      	{
-        	memcpy(tempStr, curLine, curLineLen);
-         	tempStr[curLineLen] = '\0';  // NUL-terminate!
-
-			// Zaehlen der Gesamtanzahl der Modellzeilen
-			count_all_modellines(tempStr);
-
-			count_all_number_of_powercurves(tempStr);
-
-			// Anzahl von damping lines im Modell
-			count_all_springdamperlines(tempStr);
-
-			// Anzahl der Auszuwertenden Systemstellen
-			count_all_pointstoevaluatelines(tempStr);
-
-			// Anzahl der Gear-meshes checken
-			count_all_gearmeshlines(tempStr);
-
-			// Anzahl von 15 damper
-			count_all_freqdepdamplines(tempStr);
-
-			// Anzahl von 5 damper
-			count_all_viskodamperlines(tempStr);
-
-			// Anzahl von 6 Propeller
-			count_all_proplines(tempStr);
-
-			// hat das model eine minimaldrehzahl 
-			minimal_rpm_engine(tempStr);
-
-			count_all_zerostiffnesses(tempStr);
-
-			count_all_hookejointslines(tempStr);
-        	
-			free(tempStr);
-      	}
-      	else printf("malloc() failed!?\n");
-		curLine = nextLine ? (nextLine+1) : NULL;
-	}
-
-	/*
-	falls ausgabe nur in der statuszeile stattfindne soll gut
-	flag in der config einbauen, falls ausgabe auch in einem dialog stattfinden soll, oder anderer shortcut?
-	*/
-
 	ui_set_statusbar(TRUE, "\n\t\t ---- Modellcheck :----");
 	ui_set_statusbar(TRUE, "\t Gesamtanzahl der Elemente vom Model \t %d", AnzahlModelLines);
-
 
 	if(number_of_powercurves>0){
 
 		ui_set_statusbar(TRUE, "\t number of powercurves \t %d ", number_of_powercurves);
 	}
-
 
 	ui_set_statusbar(TRUE, "\t\t ---- 3100 Systemstellen: ----");
 	ui_set_statusbar(TRUE, "\t auszuwerten \t %d ", systemlinestoevaluatedefined);
@@ -849,6 +826,20 @@ static void on_tvc_check()
 		ui_set_statusbar(TRUE, "\t\t ---- 2201 Damping Element (Elementtyp 2): ----");
 		ui_set_statusbar(TRUE, "\t im Modell \t %d", springdampmodel);
 		ui_set_statusbar(TRUE, "\t definiert \t %d ", springdampdefined);
+	}
+
+	if(couplingsmodel>0 || couplingsdefined>0)
+	{
+		ui_set_statusbar(TRUE, "\t\t ---- 2401 elst. Coupling (Elementtyp 4): ----");
+		ui_set_statusbar(TRUE, "\t im Modell \t %d", couplingsmodel);
+		ui_set_statusbar(TRUE, "\t definiert \t %d ", couplingsdefined);
+	}
+
+	if(cylindersmodel>0 || cylindersdefined>0)
+	{
+		ui_set_statusbar(TRUE, "\t\t ---- 2301 Cylindersexcitations (Elementtyp 3): ----");
+		ui_set_statusbar(TRUE, "\t im Modell \t %d", cylindersmodel);
+		ui_set_statusbar(TRUE, "\t definiert \t %d ", cylindersdefined);
 	}
 
 	if(gearmeshesmodel>0 || gearmeshesdefined>0)
@@ -896,9 +887,75 @@ static void on_tvc_check()
 	{
 		ui_set_statusbar(TRUE, "\t\t-  %d-mal 0 Steifigkeit ist/sind nicht Elementtyp 4 ", zerostiffnessesinmodel);
 	}
-
 }
 
+static void on_tvc_check()
+{
+	// gchar *my_string;
+	GeanyDocument *doc = document_get_current();
+	ScintillaObject *sci = doc->editor->sci;
+	gint len = sci_get_length(sci) + 1;
+	gchar *my_string = sci_get_contents(sci, len);
+
+	reset_all_countingvalues();
+
+    const char * curLine = my_string;
+			
+	while(curLine)
+    {
+      	const char * nextLine = strchr(curLine, '\n');
+      	int curLineLen = nextLine ? (nextLine-curLine) : strlen(curLine);
+      	char * tempStr = (char *) malloc(curLineLen+1);
+		if (tempStr)
+      	{
+        	memcpy(tempStr, curLine, curLineLen);
+         	tempStr[curLineLen] = '\0';  // NUL-terminate!
+
+			// Zaehlen der Gesamtanzahl der Modellzeilen
+			count_all_modellines(tempStr);
+
+			count_all_number_of_powercurves(tempStr);
+
+			// Anzahl von damping lines im Modell
+			count_all_springdamperlines(tempStr);
+
+			// Anzahl von elas. coupling lines im Modell
+			count_all_coupinglines(tempStr);
+
+			// Anzahl von cylinder lines im Modell
+			count_all_cylinderslines(tempStr);
+
+			// Anzahl der Auszuwertenden Systemstellen
+			count_all_pointstoevaluatelines(tempStr);
+
+			// Anzahl der Gear-meshes checken
+			count_all_gearmeshlines(tempStr);
+
+			// Anzahl von 15 damper
+			count_all_freqdepdamplines(tempStr);
+
+			// Anzahl von 5 damper
+			count_all_viskodamperlines(tempStr);
+
+			// Anzahl von 6 Propeller
+			count_all_proplines(tempStr);
+
+			// hat das model eine minimaldrehzahl 
+			minimal_rpm_engine(tempStr);
+
+			count_all_zerostiffnesses(tempStr);
+
+			count_all_hookejointslines(tempStr);
+        	
+			free(tempStr);
+      	}
+      	else printf("malloc() failed!?\n");
+		curLine = nextLine ? (nextLine+1) : NULL;
+	}
+
+	print_input_test_results();
+
+}
 
 static void numbering_branches()
 { 
@@ -1035,8 +1092,6 @@ static void numbering_branches()
 	
 }
 
-
-
 static void percent_of_ratedspeed()
 {
 	GeanyDocument *doc = document_get_current();
@@ -1106,7 +1161,6 @@ static void percent_of_ratedspeed()
 	regfree(&regex01);
 }
 
-
 static void scania_damper()
 {
 	GeanyDocument *doc = document_get_current();
@@ -1155,8 +1209,6 @@ static void scania_damper()
 	}
 	regfree(&regex01);
 }
-
-
 
 void plugin_init(G_GNUC_UNUSED GeanyData *data)
 {
