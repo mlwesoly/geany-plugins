@@ -101,8 +101,6 @@ enum
 #define sci_get_pos_at_line_sel_end(sci, line) \
 	scintilla_send_message(sci, SCI_GETLINESELENDPOSITION, line, 0)
 
-	
-
 static void update_display(void)
 {
 	while (gtk_events_pending())
