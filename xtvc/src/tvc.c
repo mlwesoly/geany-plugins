@@ -30,6 +30,7 @@
 #include <regex.h>
 #include <stdio.h>
 #include <math.h>
+#include <unistd.h>
 
 #include <geanyplugin.h>
 
@@ -91,6 +92,8 @@ enum
 	CALCULATE10_KB,
 	//OVERWRITE_WITH_SPACES_KB,
 	OVERWRITE_BLOCK_SPACES_KB,
+	OPEN_DRW_IN_VIEWER_KB,
+	OPEN_TVCFOLDER_ARCHIVE_KB,
 	COUNT_KB
 };
 
@@ -107,7 +110,7 @@ static void update_display(void)
 		gtk_main_iteration();
 }
 
-void overwrite_block_spaces()
+static void overwrite_block_spaces()
 {
 	GeanyDocument *doc = document_get_current();
 	ScintillaObject *sci = doc->editor->sci;
@@ -294,37 +297,37 @@ static void on_calculateX(int Stellen)
 			switch (Stellen)
 			{
 				case 0:
-					sprintf(buf, "%.0Lf", b);
+					sprintf(buf, " %.0Lf", b);
 					break;
 				case 1:
-					sprintf(buf, "%.1Lf", b);
+					sprintf(buf, " %.1Lf", b);
 					break;
 				case 2:
-					sprintf(buf, "%.2Lf", b);
+					sprintf(buf, " %.2Lf", b);
 					break;
 				case 3:
-					sprintf(buf, "%.3Lf", b);
+					sprintf(buf, " %.3Lf", b);
 					break;
 				case 4:
-					sprintf(buf, "%.4Lf", b);
+					sprintf(buf, " %.4Lf", b);
 					break;
 				case 5:
-					sprintf(buf, "%.5Lf", b);
+					sprintf(buf, " %.5Lf", b);
 					break;
 				case 6:
-					sprintf(buf, "%.6Lf", b);
+					sprintf(buf, " %.6Lf", b);
 					break;
 				case 7:
-					sprintf(buf, "%.7Lf", b);
+					sprintf(buf, " %.7Lf", b);
 					break;
 				case 8:
-					sprintf(buf, "%.8Lf", b);
+					sprintf(buf, " %.8Lf", b);
 					break;
 				case 9:
-					sprintf(buf, "%.9Lf", b);
+					sprintf(buf, " %.9Lf", b);
 					break;
 				case 10:
-					sprintf(buf, "%.10Lf", b);
+					sprintf(buf, " %.10Lf", b);
 					break;
 			}
 			selection_end = sci_get_selection_end(sci);
@@ -340,9 +343,9 @@ static void on_calculateX(int Stellen)
 				//sprintf(buf, " test");
 				sci_insert_text(sci, line_end, buf2);
 			}
-			sci_set_current_position (sci, selection_end, TRUE);
+			sci_set_current_position (sci, selection_end+1, TRUE);
 			sci_set_selection_start (sci,selection_start);
-			sci_set_selection_end (sci,selection_end);
+			sci_set_selection_end (sci,selection_end+1);
 			
 			clipboard = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
 			primary = gtk_clipboard_get(GDK_SELECTION_PRIMARY);
@@ -351,6 +354,7 @@ static void on_calculateX(int Stellen)
 		}		
 	}
 }
+
 /*
 static void on_calculate4()
 {
@@ -1206,6 +1210,183 @@ static void scania_damper()
 	regfree(&regex01);
 }
 
+static void on_openTerminal(gchar *workingdic)
+{
+	GeanyDocument *doc = document_get_current();
+	gchar *locale_path2;
+	locale_path2 = "/home/miki/Downloads/";
+	char* command = "pqiv";
+	char* argument_list[] = {"pqiv ", workingdic , NULL};
+
+    if (fork() == 0) {
+        int status_code = execvp(command, argument_list);
+        if (status_code == -1) {
+            printf("Terminated Incorrectly\n");
+            return;
+        }
+    }
+    else {
+        // Old Parent process. The C program will come here
+        printf("This line will be printed\n");
+    }
+	// ui_set_statusbar(TRUE,"drawing number: %s", drwnumber);
+}
+
+static void find_correct_drw(gchar *drwnumber)
+{
+	gchar *locale_path2 = "/home/miki/Downloads/";
+
+	gchar one[10] = "";
+	memset(one, '\0', sizeof(one));
+	strncpy(one, drwnumber, 1);
+	strncpy(one+1, "/", 1);
+	strncpy(one+2, drwnumber+1, 1);
+	strncpy(one+3, "/", 1);
+	strncpy(one+4, drwnumber+2, 1);
+	strncpy(one+5, drwnumber+3, 1);
+	strncpy(one+6, "/", 1);
+	strncpy(one+7, drwnumber+4, 1);
+	strncpy(one+8, "/", 1);
+	
+	gchar *prepath = g_strconcat(locale_path2, one, NULL);
+
+	gchar *workingdic = g_strconcat(prepath, drwnumber, ".ps", NULL);
+	drwnumber[5] = '0';
+	gchar *workingdic1 = g_strconcat(locale_path2, drwnumber, ".ps", NULL);
+
+	if (access(workingdic, F_OK) == 0) {
+		on_openTerminal(workingdic);
+	}else if(access(workingdic1, F_OK) == 0) {
+		on_openTerminal(workingdic1);
+	}else{
+		ui_set_statusbar(TRUE,"couldn't find drawing number: %s", drwnumber);
+	}
+}
+
+static void open_tvcfolder_archive(gchar *tvcnumber)
+{
+	gchar *locale_path2 = "/home/miki/Downloads/";
+	gchar year[2] = "";
+	memset(year, '\0', sizeof(year));
+	strncpy(year, tvcnumber+3, 1);
+	strncpy(year+1, tvcnumber+4, 1);
+	if(atoi(year)>80){
+		ui_set_statusbar(TRUE,"early tvc number is: %s", tvcnumber);
+		// 20_24_1.003
+		/*
+		gchar one[15] = "";
+		memset(one, '\0', sizeof(one));
+		strncpy(one, "19", 2);
+		strncpy(one+2, year, 2);
+		strncpy(one+3, "/", 1);
+		strncpy(one+2, tvcnumber+1, 1);
+		strncpy(one+3, "/", 1);
+		strncpy(one+4, tvcnumber+2, 1);
+		strncpy(one+5, tvcnumber+3, 1);
+		strncpy(one+6, "/", 1);
+		strncpy(one+7, tvcnumber+4, 1);
+		strncpy(one+8, "/", 1);*/
+	}else{
+		ui_set_statusbar(TRUE,"late tvc number is: %s", tvcnumber);
+	}
+	/*
+	gchar one[15] = "";
+	memset(one, '\0', sizeof(one));
+	strncpy(one, tvcnumber, 1);
+	strncpy(one+1, tvcnumber+1, 1);
+	strncpy(one+1, "/", 1);
+	strncpy(one+2, tvcnumber+1, 1);
+	strncpy(one+3, "/", 1);
+	strncpy(one+4, tvcnumber+2, 1);
+	strncpy(one+5, tvcnumber+3, 1);
+	strncpy(one+6, "/", 1);
+	strncpy(one+7, tvcnumber+4, 1);
+	strncpy(one+8, "/", 1);
+	
+	gchar *prepath = g_strconcat(locale_path2, one, NULL);
+
+	gchar *workingdic = g_strconcat(prepath, drwnumber, NULL);
+
+	if (access(workingdic, F_OK) == 0) {
+	}else{
+		ui_set_statusbar(TRUE,"couldn't find TVC number: %s", drwnumber);
+	}
+	ui_set_statusbar(TRUE,"tvc number is: %s", tvcnumber);
+	*/
+}
+
+static void open_drw_in_viewer()
+{
+	GeanyDocument *doc = document_get_current();
+	gchar *f_content;
+	GtkClipboard *clip = gtk_clipboard_get(GDK_SELECTION_CLIPBOARD);
+	gchar drwnumber[10];
+	gchar tvcnumber[12];
+	size_t maxGroups = 5;
+	regmatch_t groupArray[maxGroups];
+	regex_t regex01,regextvc;
+	int reti01,reti02,retitvc,retitvc2=TRUE;
+
+	//get content from clipboard
+	gchar *text = gtk_clipboard_wait_for_text(clip);
+
+	if (doc && !doc->readonly)
+	{
+		// einlesen des selektierten bereichs
+		ScintillaObject *sci = doc->editor->sci;
+		f_content = sci_get_selection_contents(doc->editor->sci);
+		
+		reti01 = regcomp(&regex01, "(([0-9][A-Z])[0-9]{2}[0-9][A-Z0-9]*)", REG_EXTENDED | REG_ICASE);
+
+		retitvc = regcomp(&regextvc, "([0-9]{2}_[0-9]{2}_[0-9]\.[0-9]{3})", REG_EXTENDED | REG_ICASE);
+		//reti01 = regcomp(&regex01, "(.*)", REG_EXTENDED | REG_ICASE);
+
+		reti01 = regexec(&regex01, f_content, maxGroups, groupArray, 0);
+		if(!reti01)
+		{
+			char sourcecopy[strlen(f_content)+1];
+			strcpy(sourcecopy, f_content);
+			sourcecopy[groupArray[1].rm_eo] = 0;
+			strncpy(drwnumber,sourcecopy + groupArray[1].rm_so,10);
+			find_correct_drw(drwnumber);
+		}
+		reti02 = regexec(&regex01, text, maxGroups, groupArray, 0);
+		if (!reti02 && reti01) {
+			char sourcecopy[strlen(text)+1];
+			strcpy(sourcecopy, text);
+			sourcecopy[groupArray[1].rm_eo] = 0;
+			strncpy(drwnumber,sourcecopy + groupArray[1].rm_so,10);
+			find_correct_drw(drwnumber);
+		}
+		retitvc = regexec(&regextvc, f_content, maxGroups, groupArray, 0);
+		if (!retitvc && reti02 && reti01) {
+			char sourcecopy[strlen(f_content)+1];
+			strcpy(sourcecopy, f_content);
+			sourcecopy[groupArray[1].rm_eo] = 0;
+			strncpy(tvcnumber,sourcecopy + groupArray[1].rm_so,11);
+			open_tvcfolder_archive(tvcnumber);
+		}
+		retitvc2 = regexec(&regextvc, text, maxGroups, groupArray, 0);
+		if (!retitvc2 && retitvc && reti02 && reti01) {
+			char sourcecopy[strlen(text)+1];
+			strcpy(sourcecopy, text);
+			sourcecopy[groupArray[1].rm_eo] = 0;
+			strncpy(tvcnumber,sourcecopy + groupArray[1].rm_so,11);
+			open_tvcfolder_archive(tvcnumber);
+		}
+
+	}
+	//ui_set_statusbar(TRUE,"drawing number: %s", drwnumber);
+	//check if something is selected
+	
+	//open number in viewer
+	//ui_set_statusbar(TRUE,"drawing number: %s", drwnumbertmp);
+	
+	regfree(&regextvc);
+	regfree(&regex01);
+}
+
+
 void plugin_init(G_GNUC_UNUSED GeanyData *data)
 {
 	GeanyKeyGroup *plugin_key_group;
@@ -1229,7 +1410,6 @@ void plugin_init(G_GNUC_UNUSED GeanyData *data)
 
 	keybindings_set_item(plugin_key_group, BRANCHES_INPUT_KB, numbering_branches,
 		0, 0, "branches", _("branchesinput"), NULL);
-
 
 	keybindings_set_item(plugin_key_group, CALCULATE0_KB, on_calculateY0,
 		0, 0, "calculate0", _("calculate0"), NULL);
@@ -1259,6 +1439,14 @@ void plugin_init(G_GNUC_UNUSED GeanyData *data)
 
 	keybindings_set_item(plugin_key_group, OVERWRITE_BLOCK_SPACES_KB, overwrite_block_spaces, 
 		0, 0, "overwrite_block_spaces", _("overwrite_block_spaces"), NULL);
+
+
+	keybindings_set_item(plugin_key_group, OPEN_DRW_IN_VIEWER_KB, open_drw_in_viewer, 
+		0, 0, "open_drw_in_viewer", _("open_drw_in_viewer"), NULL);
+
+
+	//keybindings_set_item(plugin_key_group, OPEN_TVCFOLDER_ARCHIVE_KB, open_tvcfolder_archive, 
+	//	0, 0, "open_tvcfolder_archive", _("open_tvcfolder_archive"), NULL);
 
 	
 	//keybindings_set_item(plugin_key_group, OVERWRITE_WITH_SPACES_KB, overwrite_with_spaces, 
