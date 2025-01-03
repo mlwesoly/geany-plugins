@@ -31,6 +31,8 @@
 #include <stdio.h>
 #include <math.h>
 #include <unistd.h>
+#include <dirent.h>
+#include <errno.h>
 
 #include <geanyplugin.h>
 
@@ -1205,7 +1207,7 @@ static void scania_damper()
 			sci_insert_text(sci, startofline+linelenght, helper);
 		}
 	}else{
-		ui_set_statusbar(TRUE, "input nicht okay ( aC bC aD bD := Integer Float Integer Float )");
+		ui_set_statusbar(TRUE, "input nicht okay ( aC bC aD bD := Float Float Float Float )");
 	}
 	regfree(&regex01);
 }
@@ -1265,54 +1267,40 @@ static void find_correct_drw(gchar *drwnumber)
 
 static void open_tvcfolder_archive(gchar *tvcnumber)
 {
+	// 20_24_1.003
+	// VK20/2024/20_24_2.003
 	gchar *locale_path2 = "/home/miki/Downloads/";
-	gchar year[2] = "";
+	gchar year[3] = "";
 	memset(year, '\0', sizeof(year));
-	strncpy(year, tvcnumber+3, 1);
-	strncpy(year+1, tvcnumber+4, 1);
-	if(atoi(year)>80){
-		ui_set_statusbar(TRUE,"early tvc number is: %s", tvcnumber);
-		// 20_24_1.003
-		/*
-		gchar one[15] = "";
-		memset(one, '\0', sizeof(one));
-		strncpy(one, "19", 2);
-		strncpy(one+2, year, 2);
-		strncpy(one+3, "/", 1);
-		strncpy(one+2, tvcnumber+1, 1);
-		strncpy(one+3, "/", 1);
-		strncpy(one+4, tvcnumber+2, 1);
-		strncpy(one+5, tvcnumber+3, 1);
-		strncpy(one+6, "/", 1);
-		strncpy(one+7, tvcnumber+4, 1);
-		strncpy(one+8, "/", 1);*/
-	}else{
-		ui_set_statusbar(TRUE,"late tvc number is: %s", tvcnumber);
-	}
-	/*
+	strncpy(year, tvcnumber+3, 2);
+	//strncpy(year+1, tvcnumber+4, 1);
 	gchar one[15] = "";
 	memset(one, '\0', sizeof(one));
-	strncpy(one, tvcnumber, 1);
-	strncpy(one+1, tvcnumber+1, 1);
-	strncpy(one+1, "/", 1);
-	strncpy(one+2, tvcnumber+1, 1);
-	strncpy(one+3, "/", 1);
-	strncpy(one+4, tvcnumber+2, 1);
-	strncpy(one+5, tvcnumber+3, 1);
-	strncpy(one+6, "/", 1);
-	strncpy(one+7, tvcnumber+4, 1);
-	strncpy(one+8, "/", 1);
-	
+	strncpy(one, "VK", 2);
+	strncpy(one+2,tvcnumber, 2);
+	strncpy(one+4, "/", 1);
+	if(atoi(year)>80){
+		strncpy(one+5, "19", 2);
+		strncpy(one+7, year, 2);
+		strncpy(one+9, "/", 1);
+	}else{
+		strncpy(one+5, "20", 2);
+		strncpy(one+7, year, 2);
+		strncpy(one+9, "/", 1);
+	}
 	gchar *prepath = g_strconcat(locale_path2, one, NULL);
 
-	gchar *workingdic = g_strconcat(prepath, drwnumber, NULL);
-
-	if (access(workingdic, F_OK) == 0) {
-	}else{
-		ui_set_statusbar(TRUE,"couldn't find TVC number: %s", drwnumber);
+	DIR* dir = opendir(prepath);
+	if (dir) {
+		ui_set_statusbar(TRUE," Folder  %s can be opened", prepath);
+		/* Directory exists. */
+		closedir(dir);
+	} else if (ENOENT == errno) {
+		ui_set_statusbar(TRUE,"doesn't exist: %s", prepath);
+		/* Directory does not exist. */
+	} else {
+		/* opendir() failed for some other reason. */
 	}
-	ui_set_statusbar(TRUE,"tvc number is: %s", tvcnumber);
-	*/
 }
 
 static void open_drw_in_viewer()
@@ -1385,7 +1373,6 @@ static void open_drw_in_viewer()
 	regfree(&regextvc);
 	regfree(&regex01);
 }
-
 
 void plugin_init(G_GNUC_UNUSED GeanyData *data)
 {
