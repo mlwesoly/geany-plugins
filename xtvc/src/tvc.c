@@ -839,7 +839,7 @@ static void print_input_test_results()
 
 	if(cylindersmodel>0 || cylindersdefined>0)
 	{
-		ui_set_statusbar(TRUE, "\t\t ---- 2301 Cylindersexcitations (Elementtyp 3): ----");
+		ui_set_statusbar(TRUE, "\t\t ---- 2301 Cylinderexcitation (Elementtyp 3): ----");
 		ui_set_statusbar(TRUE, "\t im Modell \t %d", cylindersmodel);
 		ui_set_statusbar(TRUE, "\t definiert \t %d ", cylindersdefined);
 	}
