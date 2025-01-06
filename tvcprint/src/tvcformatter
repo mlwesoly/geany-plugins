@@ -1,0 +1,20 @@
+#!/bin/awk -f
+BEGIN {FPAT = "([^ ]+)|('[^']+')"; k=0;}  # Begin section
+    {
+        # if $5 == 1.0[0]* then %10.1f $5
+        # if $7+ then append the rest
+        {if(/[1][0-9]{3} '.*'/ ){  #pattern matching to modell
+            k=1;
+            out = ""; for (i = 7; i <= NF; i++) {out = out " " $i};
+            printf "%s %s  %9.4f  %9.4f  %10.9f %d %s\n",$1,$2,$3,$4,$5,$6,out;
+            # print $1,$2,$3,$4,$5,$6
+
+        }else if(k=1){
+            if(/^\s*$/){
+                print $0;
+                     k=2;
+                 }
+             }
+         }
+    }     # Loop section
+END{}

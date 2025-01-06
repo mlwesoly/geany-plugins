@@ -1,0 +1,39 @@
+tvcx plugin
+=====================
+
+About
+-----
+
+
+Requirements
+------------
+Geany 0.19 or later and the respective headers and development libraries.
+
+
+Installation
+------------
+
+
+
+Usage
+-----
+
+
+
+Known issues
+------------
+
+
+
+License
+-------
+Insert Numbers is distributed under the terms of the GNU General Public
+License as published by the Free Software Foundation; either version 2 of
+the License, or (at your option) any later version. A copy of this license
+can be found in the file COPYING included with the source code of this
+program.
+
+
+Ideas, questions, patches and bug reports
+-----------------------------------------
+Michael Wesoly <michaelwesoly@pm.me>
