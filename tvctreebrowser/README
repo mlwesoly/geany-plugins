@@ -1,0 +1,47 @@
+.. |(version)| replace:: 0.20
+
+TreeBrowser plugin
+==================
+
+.. contents::
+
+
+About
+=====
+
+
+Features
+========
+
+
+Requirements
+============
+* GTK >= 2.8.0
+* GIO >= 2.0 (optional)
+* Geany >= 0.17
+
+
+Usage
+=====
+
+
+FAQ
+===
+
+Download Source
+===============
+
+
+Installation
+============
+
+
+
+License
+=======
+
+TreeBrowser plugin is distributed under the same license as in geany.
+
+
+Ideas, questions, patches and bug reports
+=========================================
