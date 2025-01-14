@@ -57,21 +57,21 @@ if ENABLE_GEANYINSERTNUM
 SUBDIRS += geanyinsertnum
 endif
 
-if ENABLE_LATEX
-SUBDIRS += latex
-endif
+#if ENABLE_LATEX
+#SUBDIRS += latex
+#endif
 
-if ENABLE_GEANYLUA
-SUBDIRS += geanylua
-endif
+#if ENABLE_GEANYLUA
+#SUBDIRS += geanylua
+#endif
 
-if ENABLE_GEANYMACRO
-SUBDIRS += geanymacro
-endif
+#if ENABLE_GEANYMACRO
+#SUBDIRS += geanymacro
+#endif
 
-if ENABLE_GEANYMINISCRIPT
-SUBDIRS += geanyminiscript
-endif
+#if ENABLE_GEANYMINISCRIPT
+#SUBDIRS += geanyminiscript
+#endif
 
 if ENABLE_GEANYNUMBEREDBOOKMARKS
 SUBDIRS += geanynumberedbookmarks
@@ -81,13 +81,13 @@ if ENABLE_GEANYPG
 SUBDIRS += geanypg
 endif
 
-if ENABLE_GEANYPRJ
-SUBDIRS += geanyprj
-endif
+#if ENABLE_GEANYPRJ
+#SUBDIRS += geanyprj
+#endif
 
-if ENABLE_GEANYVC
-SUBDIRS += geanyvc
-endif
+#if ENABLE_GEANYVC
+#SUBDIRS += geanyvc
+#endif
 
 if ENABLE_GENIUSPASTE
 SUBDIRS += geniuspaste
@@ -105,9 +105,9 @@ if ENABLE_LINEOPERATIONS
 SUBDIRS += lineoperations
 endif
 
-if ENABLE_LIPSUM
-SUBDIRS += lipsum
-endif
+#if ENABLE_LIPSUM
+#SUBDIRS += lipsum
+#endif
 
 if ENABLE_LSP
 SUBDIRS += lsp
@@ -116,6 +116,7 @@ endif
 if ENABLE_MARKDOWN
 SUBDIRS += markdown
 endif
+
 
 if ENABLE_OVERVIEW
 SUBDIRS += overview
@@ -129,21 +130,21 @@ if ENABLE_POHELPER
 SUBDIRS += pohelper
 endif
 
-if ENABLE_PRETTY_PRINTER
-SUBDIRS += pretty-printer
-endif
+#if ENABLE_PRETTY_PRINTER
+#SUBDIRS += pretty-printer
+#endif
 
-if ENABLE_PROJECTORGANIZER
-SUBDIRS += projectorganizer
-endif
+#if ENABLE_PROJECTORGANIZER
+#SUBDIRS += projectorganizer
+#endif
 
 if ENABLE_SCOPE
 SUBDIRS += scope
 endif
 
-if ENABLE_SENDMAIL
-SUBDIRS += sendmail
-endif
+#if ENABLE_SENDMAIL
+#SUBDIRS += sendmail
+#endif
 
 if ENABLE_SHIFTCOLUMN
 SUBDIRS += shiftcolumn
@@ -157,26 +158,30 @@ if ENABLE_TABLECONVERT
 SUBDIRS += tableconvert
 endif
 
-if ENABLE_TREEBROWSER
-SUBDIRS += treebrowser
-endif
+#if ENABLE_TREEBROWSER
+#SUBDIRS += treebrowser
+#endif
 
 if ENABLE_UPDATECHECKER
 SUBDIRS += updatechecker
 endif
 
-if ENABLE_VIMODE
-SUBDIRS += vimode
-endif
+#if ENABLE_VIMODE
+#SUBDIRS += vimode
+#endif
 
-if ENABLE_WEBHELPER
-SUBDIRS += webhelper
-endif
+#if ENABLE_WEBHELPER
+#SUBDIRS += webhelper
+#endif
 
-if ENABLE_WORKBENCH
-SUBDIRS += workbench
-endif
+#if ENABLE_WORKBENCH
+#SUBDIRS += workbench
+#endif
 
-if ENABLE_XMLSNIPPETS
-SUBDIRS += xmlsnippets
+#if ENABLE_XMLSNIPPETS
+#SUBDIRS += xmlsnippets
+#endif
+
+if ENABLE_XTVC
+SUBDIRS += xtvc
 endif

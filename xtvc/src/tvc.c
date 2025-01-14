@@ -299,42 +299,43 @@ static void on_calculateX(int Stellen)
 			switch (Stellen)
 			{
 				case 0:
-					sprintf(buf, " %.0Lf", b);
+					sprintf(buf, "%.0Lf", b);
 					break;
 				case 1:
-					sprintf(buf, " %.1Lf", b);
+					sprintf(buf, "%.1Lf", b);
 					break;
 				case 2:
-					sprintf(buf, " %.2Lf", b);
+					sprintf(buf, "%.2Lf", b);
 					break;
 				case 3:
-					sprintf(buf, " %.3Lf", b);
+					sprintf(buf, "%.3Lf", b);
 					break;
 				case 4:
-					sprintf(buf, " %.4Lf", b);
+					sprintf(buf, "%.4Lf", b);
 					break;
 				case 5:
-					sprintf(buf, " %.5Lf", b);
+					sprintf(buf, "%.5Lf", b);
 					break;
 				case 6:
-					sprintf(buf, " %.6Lf", b);
+					sprintf(buf, "%.6Lf", b);
 					break;
 				case 7:
-					sprintf(buf, " %.7Lf", b);
+					sprintf(buf, "%.7Lf", b);
 					break;
 				case 8:
-					sprintf(buf, " %.8Lf", b);
+					sprintf(buf, "%.8Lf", b);
 					break;
 				case 9:
-					sprintf(buf, " %.9Lf", b);
+					sprintf(buf, "%.9Lf", b);
 					break;
 				case 10:
-					sprintf(buf, " %.10Lf", b);
+					sprintf(buf, "%.10Lf", b);
 					break;
 			}
 			selection_end = sci_get_selection_end(sci);
 			selection_start = sci_get_selection_start(sci);
-			sci_insert_text(sci, selection_end, buf);
+			sci_insert_text(sci, selection_end, " ");
+			sci_insert_text(sci, selection_end+1, buf);
 			ui_set_statusbar(TRUE, "result: %s", buf);
 
 			if ((!reti03) || (!reti04)){
@@ -1265,11 +1266,32 @@ static void find_correct_drw(gchar *drwnumber)
 	}
 }
 
+static void on_opennautilus(gchar *workingdic)
+{
+	char* command = "nautilus";
+	char* argument_list[] = {"nautilus ", workingdic , NULL};
+
+    if (fork() == 0) {
+        int status_code = execvp(command, argument_list);
+        if (status_code == -1) {
+            printf("Terminated Incorrectly\n");
+            return;
+        }
+    }
+    else {
+        // Old Parent process. The C program will come here
+        printf("This line will be printed\n");
+		fflush(stdout);
+    }
+	// ui_set_statusbar(TRUE,"drawing number: %s", drwnumber);
+}
+
 static void open_tvcfolder_archive(gchar *tvcnumber)
 {
 	// 20_24_1.003
 	// VK20/2024/20_24_2.003
-	gchar *locale_path2 = "/home/miki/Downloads/";
+	GError 				*error 		= NULL;
+	gchar *locale_path2 = "/mnt/hgfs/tvc/"; // /mnt/hgfs/tvc/
 	gchar year[3] = "";
 	memset(year, '\0', sizeof(year));
 	strncpy(year, tvcnumber+3, 2);
@@ -1288,20 +1310,34 @@ static void open_tvcfolder_archive(gchar *tvcnumber)
 		strncpy(one+7, year, 2);
 		strncpy(one+9, "/", 1);
 	}
-	gchar *prepath = g_strconcat(locale_path2, one, NULL);
+	// gchar *prepath = g_strconcat(locale_path2, one, NULL); //
+	gchar *fullpath = g_strconcat(locale_path2, one, tvcnumber, "/" ,NULL); // one, 
 
-	DIR* dir = opendir(prepath);
+	DIR* dir = opendir(fullpath);
 	if (dir) {
-		ui_set_statusbar(TRUE," Folder  %s can be opened", prepath);
-		/* Directory exists. */
+		ui_set_statusbar(TRUE," Folder  %s can be opened", fullpath);
+		on_opennautilus(fullpath);
+		/* Directory exists. */ 
+		
 		closedir(dir);
 	} else if (ENOENT == errno) {
-		ui_set_statusbar(TRUE,"doesn't exist: %s", prepath);
+		ui_set_statusbar(TRUE,"doesn't exist: %s", fullpath);
 		/* Directory does not exist. */
 	} else {
 		/* opendir() failed for some other reason. */
 	}
 }
+/*
+static void
+on_menu_open_nautilus(GtkMenuItem *menuitem, const gchar *uri)
+{ 
+	gchar *cwd;
+	cwd = g_strdup(addressbar_last_address);
+		
+	char* argument_list[] = {addressbar_last_address , NULL};
+	spawn_async(cwd, "nautilus", argument_list, NULL, NULL, NULL);
+	g_free(cwd);
+}*/
 
 static void open_drw_in_viewer()
 {
