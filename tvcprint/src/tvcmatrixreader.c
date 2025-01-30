@@ -4,6 +4,7 @@
 #include "tvcformatter.h"
 #include "tvcprint.h"
 #include "tvcmatrixreader.h"
+#include <locale.h>
 
 
 #define MAX_LINES 250000
