@@ -38,6 +38,7 @@
 #include "tvcmatrixreader.h"
 #include "tvcdialog.h"
 #include "tvcreflist.h"
+#include <locale.h>
 
 
 GeanyPlugin	*geany_plugin;
@@ -257,6 +258,9 @@ static void searchcall(GtkMenuItem *menuitem, gpointer user_data)
 void plugin_init(G_GNUC_UNUSED GeanyData *data)
 {
     GeanyKeyGroup *key_group;
+
+    setlocale(LC_ALL, "C");
+    setlocale(LC_NUMERIC, "C");
     printf("\n\n");
 	//key_group = plugin_set_key_group(geany_plugin, "GeanyCtags", KB_COUNT, kb_callback);
     
