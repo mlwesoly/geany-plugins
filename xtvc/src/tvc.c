@@ -181,30 +181,6 @@ static void overwrite_block_spaces()
 	g_free(line_pos);
 }
 
-/*
-void overwrite_with_spaces()
-{
-	GeanyDocument *doc = document_get_current();
-	ScintillaObject *sci = doc->editor->sci;
-
-	gint start = sci_get_selection_start(sci);
-	gint end = sci_get_selection_end(sci);
-	gint line_start = sci_get_line_from_position(sci,start);
-	gint line_end = sci_get_line_from_position(sci,end);
-
-	if(line_end == line_start){
-		if(sci_get_selection_mode(sci) == SC_SEL_RECTANGLE){
-			ui_set_statusbar(TRUE,"bitte nur in einer zeile markieren");
-		}else{
-			gchar *text = sci_get_selection_contents(sci);
-
-			memset(text, ' ', end-start);
-			sci_replace_sel(sci, text);
-			g_free(text);
-		}
-	}
-}*/
-
 static void on_calculateX(int Stellen)
 {
 	GeanyDocument *doc = document_get_current();
@@ -517,8 +493,8 @@ static void count_all_springdamperlines(char * tempStr)
 	
 	//element 2. 
     retim = regcomp(&regexm, "^(1[0-9]{3}) +('.*') +([0-9]+[.]?[0-9]*) +(([^-][0-9]+[.]?[0-9]*)|-1) +([0-9]+[.]?[0-9]*) +2(.*)", REG_EXTENDED);
-    retid = regcomp(&regexd, "^22[0-9]{2} +([0-9]+[.]?[0-9]*) +([-]?[0-9]+[.]?[0-9]*) +([0-9]+[.]?[0-9]*) +([0-9]+[.]?[0-9]*) +([0-9]+[.]?[0-9]*).*", REG_EXTENDED); // liest nicht immer alle 
-
+    //retid = regcomp(&regexd, "^22[0-9]{2} +([-]?[0-9]+[.]?[0-9]*) +([-]?[0-9]+[.]?[0-9]*) +([-]?[0-9]+[.]?[0-9]*) +([-]?[0-9]+[.]?[0-9]*) +([0-9]+[.]?[0-9]*).*", REG_EXTENDED); // liest nicht immer alle 
+	retid = regcomp(&regexd, "^22[0-9]{2}( +-?([0-9]+[.]?[0-9]*)){5}.*", REG_EXTENDED); // liest nicht immer alle 
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);
 	if (!retim) {
 		springdampmodel++;
@@ -710,7 +686,7 @@ static void count_all_cylinderslines(char * tempStr)
 	regex_t regexm, regexd;
 	int retim,retid;
 	
-	retim = regcomp(&regexm, "^(1[0-9]{3}) +('.*') +([0-9]+[.]?[0-9]*) +(([^-][0-9]+[.]?[0-9]*)|-1) +([0-9]+[.]?[0-9]*) +3(.*)", REG_EXTENDED);
+	retim = regcomp(&regexm, "^(1[0-9]{3}) +('.*') +([0-9]+[.]?[0-9]*) +(([^-][0-9]+[.]?[0-9]*)|-1) +([0-9]+[.]?[0-9]*) +-?3(.*)", REG_EXTENDED);
     retid = regcomp(&regexd, "^23[0-9]{2}( +(([0-9]+[.]?[0-9]*))){2}.*", REG_EXTENDED);
 
 	retim = regexec(&regexm, tempStr, 0, NULL, 0);

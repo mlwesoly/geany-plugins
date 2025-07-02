@@ -64,6 +64,7 @@ static gchar *reporttype = NULL;
 static gchar *couppath = NULL;
 static gchar *templatetype = NULL;
 static gchar *coupusage = NULL;
+static gchar *preletter = NULL;
 
 static GtkWidget *expander, *coupentry, *coupbar;
 static	GtkWidget *viewprop, *propsize;
@@ -90,8 +91,8 @@ static gboolean 			flag_on_expand_refresh 		= FALSE;
 
 static gchar 				*CONFIG_FILE 				= NULL;
 static gchar 				*CONFIG_OPEN_EXTERNAL_CMD 	= NULL;
-static gchar 				*CONFIG_OPEN_TERMINAL 	= NULL;
-static gchar 				*CONFIG_OPEN_NAUTILUS 	= NULL;
+static gchar 				*CONFIG_OPEN_TERMINAL 		= NULL;
+static gchar 				*CONFIG_OPEN_NAUTILUS 		= NULL;
 static gboolean 			CONFIG_REVERSE_FILTER 		= FALSE;
 static gboolean 			CONFIG_ONE_CLICK_CHDOC 		= FALSE;
 static gboolean 			CONFIG_SHOW_HIDDEN_FILES 	= FALSE;
@@ -361,6 +362,7 @@ check_filtered(const gchar *base_name)
 	filtered = CONFIG_REVERSE_FILTER || temporary_reverse ? TRUE : FALSE;
 	for (; filters[i]; i++)
 	{
+		// TODO : filters[i] mit * davor und * dahinter.
 		if (utils_str_equal(base_name, "*") || g_pattern_match_simple(filters[i], base_name))
 		{
 			filtered = CONFIG_REVERSE_FILTER || temporary_reverse ? FALSE : TRUE;
@@ -1032,7 +1034,6 @@ on_menu_current_path(GtkMenuItem *menuitem, gpointer *user_data)
 	g_free(uri);
 }
 
-
 static void
 on_menu_open_externally(GtkMenuItem *menuitem, const gchar *uri)
 {
@@ -1367,6 +1368,7 @@ create_popup_menu(const gchar *name, const gchar *uri)
 	g_signal_connect(item, "activate", G_CALLBACK(on_menu_executescript), NULL);
 	gtk_widget_set_sensitive(item, is_exists);
 
+/* benutze ich einfach nicht, auf f5 zu legen ist viel besser
 #if GTK_CHECK_VERSION(3, 10, 0)
 	item = ui_image_menu_item_new("execute-tvc", _("Execute_TVC"));
 #else
@@ -1378,6 +1380,7 @@ create_popup_menu(const gchar *name, const gchar *uri)
 
 	item = gtk_separator_menu_item_new();
 	gtk_container_add(GTK_CONTAINER(menu), item); 
+*/
 
 #if GTK_CHECK_VERSION(3, 10, 0)
 	item = ui_image_menu_item_new("get-filename", _("_GetFilename"));
@@ -1391,7 +1394,7 @@ create_popup_menu(const gchar *name, const gchar *uri)
 	item = gtk_separator_menu_item_new();
 	gtk_container_add(GTK_CONTAINER(menu), item);
 
-
+/*
 #if GTK_CHECK_VERSION(3, 10, 0)
 	item = ui_image_menu_item_new("go-up", _("Go _Up"));
 #else
@@ -1407,7 +1410,7 @@ create_popup_menu(const gchar *name, const gchar *uri)
 #endif
 	gtk_container_add(GTK_CONTAINER(menu), item);
 	g_signal_connect(item, "activate", G_CALLBACK(on_menu_current_path), NULL);
-
+*/
 #if GTK_CHECK_VERSION(3, 10, 0)
 	item = ui_image_menu_item_new("document-open", _("_Open Externally"));
 #else
@@ -1431,7 +1434,7 @@ create_popup_menu(const gchar *name, const gchar *uri)
 	g_signal_connect_data(item, "activate", G_CALLBACK(on_menu_open_nautilus), g_strdup(addressbar_last_address), (GClosureNotify)g_free, 0);
 	gtk_widget_set_sensitive(item, g_file_test(addressbar_last_address, G_FILE_TEST_EXISTS));
 
-
+/*
 #if GTK_CHECK_VERSION(3, 10, 0)
 	item = ui_image_menu_item_new("go-top", _("Set as _Root"));
 #else
@@ -1440,7 +1443,7 @@ create_popup_menu(const gchar *name, const gchar *uri)
 	gtk_container_add(GTK_CONTAINER(menu), item);
 	g_signal_connect_data(item, "activate", G_CALLBACK(on_menu_set_as_root), g_strdup(uri), (GClosureNotify)g_free, 0);
 	gtk_widget_set_sensitive(item, is_dir);
-
+*/
 #if GTK_CHECK_VERSION(3, 10, 0)
 	item = ui_image_menu_item_new("view-refresh", _("Refres_h"));
 #else
@@ -1448,7 +1451,7 @@ create_popup_menu(const gchar *name, const gchar *uri)
 #endif
 	gtk_container_add(GTK_CONTAINER(menu), item);
 	g_signal_connect(item, "activate", G_CALLBACK(on_menu_refresh), NULL);
-
+/*
 #if GTK_CHECK_VERSION(3, 10, 0)
 	item = ui_image_menu_item_new("edit-find", _("_Find in Files"));
 #else
@@ -1460,7 +1463,7 @@ create_popup_menu(const gchar *name, const gchar *uri)
 
 	item = gtk_separator_menu_item_new();
 	gtk_container_add(GTK_CONTAINER(menu), item);
-
+*/
 #if GTK_CHECK_VERSION(3, 10, 0)
 	item = ui_image_menu_item_new("list-add", _("N_ew Folder"));
 #else
@@ -1528,7 +1531,7 @@ create_popup_menu(const gchar *name, const gchar *uri)
 	item = gtk_separator_menu_item_new();
 	gtk_container_add(GTK_CONTAINER(menu), item);
 	gtk_widget_show(item);
-
+/*
 #if GTK_CHECK_VERSION(3, 10, 0)
 	item = ui_image_menu_item_new("go-next", _("E_xpand All"));
 #else
@@ -1562,7 +1565,7 @@ create_popup_menu(const gchar *name, const gchar *uri)
 	gtk_container_add(GTK_CONTAINER(menu), item);
 	gtk_check_menu_item_set_active(GTK_CHECK_MENU_ITEM(item), CONFIG_SHOW_BARS ? TRUE : FALSE);
 	g_signal_connect(item, "activate", G_CALLBACK(on_menu_show_bars), NULL);
-
+*/
 	gtk_widget_show_all(menu);
 
 	return menu;
@@ -1703,7 +1706,7 @@ on_treeview_mouseclick(GtkWidget *widget, GdkEventButton *event, GtkTreeSelectio
 	GtkWidget *menu;
 	gchar *name = NULL, *uri = NULL;
 	GError* err = NULL;
-	gchar *fpath = "file://";
+	const gchar *fpath = "file://";
 
 	if (event->button == 1 && event->type == GDK_2BUTTON_PRESS)
 	{
@@ -1722,7 +1725,7 @@ on_treeview_mouseclick(GtkWidget *widget, GdkEventButton *event, GtkTreeSelectio
 								TREEBROWSER_COLUMN_NAME, &name,
 								TREEBROWSER_COLUMN_URI, &uri,
 								-1);
-								
+							
 		char * pointer = strstr(uri, "pdf");
 		if ( pointer ){
 			gchar *fullpath = malloc(strlen(fpath) + strlen(uri) + 1);
@@ -1731,6 +1734,7 @@ on_treeview_mouseclick(GtkWidget *widget, GdkEventButton *event, GtkTreeSelectio
 			strcat(fullpath,uri);
 		
 			gtk_show_uri_on_window(NULL, fullpath, GDK_CURRENT_TIME, &err);
+			
 		}else if(strstr(uri, "odt") != NULL){
 			gchar *fullpath = malloc(strlen(fpath) + strlen(uri) + 1);
 		
@@ -2090,7 +2094,7 @@ static void
 create_sidebar(void)
 {
 	GtkWidget 			*scrollwin;
-	GtkWidget 			*toolbar,*tvctoolbar;
+	GtkWidget 			*toolbar;
 	GtkWidget 			*wid;
 	GtkTreeSelection 	*selection;
 	int showaddition=0;
@@ -2155,6 +2159,7 @@ create_sidebar(void)
 	gtk_widget_set_tooltip_text(wid, _("Go up"));
 	g_signal_connect(wid, "clicked", G_CALLBACK(on_button_go_up), NULL);
 	gtk_container_add(GTK_CONTAINER(toolbar), wid);
+
 
 #if GTK_CHECK_VERSION(3, 10, 0)
 	wid = gtk_image_new_from_icon_name("view-refresh", GTK_ICON_SIZE_SMALL_TOOLBAR);
@@ -2509,7 +2514,7 @@ static void on_menu_executescript(GtkMenuItem *menuitem, gpointer *user_data)
 	GtkTreeModel 		*model;
 	gchar 				*uri, *uri_parent;
 	gchar				*command;
-	GPid 				*child_pid;
+	GPid  				*child_pid;
 	//GError ** 	error_;
 
 	if (! gtk_tree_selection_get_selected(selection, &model, &iter))
@@ -2723,16 +2728,16 @@ static void set_report_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user
 	switch ( index )
 	{
 		case 0:
-			reporttype = "EP";
+			reporttype = g_strdup("EP");
 			break;
 		case 1:
-			reporttype = "EA";
+			reporttype = g_strdup("EA");
 			break;
 		case 2:
-			reporttype = "EMP";
+			reporttype = g_strdup("EMP");
 			break;
 		case 3:
-			reporttype = "industry";
+			reporttype = g_strdup("industry");
 			break;
 		default:
 			printf("default\n");
@@ -2751,16 +2756,16 @@ static void set_template_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer us
 		// declarations
 		// . . .
 		case 0:
-			templatetype = "EP";
+			templatetype = g_strdup("EP");
 			break;
 		case 1:
-			templatetype = "EA";
+			templatetype = g_strdup("EA");
 			break;
 		case 2:
-			templatetype = "EMP";
+			templatetype = g_strdup("EMP");
 			break;
 		case 3:
-			templatetype = "industry";
+			templatetype = g_strdup("industry");
 			break;
 		default:
 			printf("default\n");
@@ -2809,79 +2814,121 @@ static void copy_new_project_template()
 static void ui_CoupEntry_activate(GtkEntry *coupentry, gpointer user_data)
 {
 	gchar *text;
-	char temptext[15]; // 24_24_2.009
+	gchar temptext[15]; // 24_24_2.009
+	const gchar *temptextpre = NULL;
 	regex_t regex, regexasterix, regexasterixone, regexsilicone;
+	regex_t regexpre, regexasterixpre, regexsiliconepre;
 	int reti, retiasterix, retiasterixone, retisilicone;
+	int retipre, retiasterixpre, retisiliconepre;
 	gchar *material="";
 	size_t maxGroups = 3;
 	regmatch_t groupArray[maxGroups], groupArray2[maxGroups], groupArray3[maxGroups];
+	regmatch_t groupArraypre[maxGroups], groupArray2pre[maxGroups], groupArray3pre[maxGroups];
 	reti = regcomp(&regex, "([A-Z][0-9][0-9A-Z]([1-4]|D)[0-9A-Z])", REG_EXTENDED | REG_ICASE  ); //REG_ICASE
 	retiasterix = regcomp(&regexasterix, "([A-Z][0-9][0-9A-Z][1-4A-Z])", REG_EXTENDED | REG_ICASE  ); //REG_ICASE
 	retisilicone = regcomp(&regexsilicone, "([A-Z][0-9]{2}[1-4][0-9]S)", REG_EXTENDED | REG_ICASE  ); //REG_ICASE
+
+	retipre = regcomp(&regexpre, "([0-9][0-9A-Z]([1-4]|D)[0-9A-Z])", REG_EXTENDED | REG_ICASE  ); //REG_ICASE
+	retiasterixpre = regcomp(&regexasterixpre, "([0-9][0-9A-Z][1-4A-Z])", REG_EXTENDED | REG_ICASE  ); //REG_ICASE
+	retisiliconepre = regcomp(&regexsiliconepre, "([0-9]{2}[1-4][0-9]S)", REG_EXTENDED | REG_ICASE  ); //REG_ICASE
 	
 	text = gtk_entry_get_text(GTK_ENTRY(coupentry));
 	
 	reti = regexec(&regex, text, maxGroups, groupArray, 0);
 	retiasterix = regexec(&regexasterix, text, maxGroups, groupArray2, 0);
 	retisilicone = regexec(&regexsilicone, text, maxGroups, groupArray3, 0);
+	retipre = regexec(&regexpre, text, maxGroups, groupArraypre, 0);
+	retiasterixpre = regexec(&regexasterixpre, text, maxGroups, groupArray2pre, 0);
+	retisiliconepre = regexec(&regexsiliconepre, text, maxGroups, groupArray3pre, 0);
+
 	ui_set_statusbar(TRUE, "checking for coupling");
-	
+
+	//preletter
 	if (!retisilicone){
-		char sourcecopy[strlen(text)+1];
+		gchar sourcecopy[strlen(text)+1];
 		strcpy(sourcecopy, text);
 		sourcecopy[groupArray3[1].rm_eo] = 0;
 		strcpy(temptext, sourcecopy + groupArray3[1].rm_so);
-		ui_set_statusbar(TRUE, "%s", temptext);
+		ui_set_statusbar(TRUE, "Silikon %s", temptext);
 		reti=1;
 		retiasterix=1;
 		// currentTVCNumber= sourcecopy + groupArray[1].rm_so;
-	}else if (!reti) {
-		char sourcecopy[strlen(text)+1];
+	} else if (!reti) {
+		gchar sourcecopy[strlen(text)+1];
 		strcpy(sourcecopy, text);
 		sourcecopy[groupArray[1].rm_eo] = 0;
 		strcpy(temptext, sourcecopy + groupArray[1].rm_so);
-		ui_set_statusbar(TRUE, "%s", temptext);
+		ui_set_statusbar(TRUE, "Gummi %s", temptext);
 		// currentTVCNumber= sourcecopy + groupArray[1].rm_so;
 	} else if (!retiasterix){
-		char sourcecopy[strlen(text)+1];
+		gchar sourcecopy[strlen(text)+1];
 		strcpy(sourcecopy, text);
 		sourcecopy[groupArray2[1].rm_eo] = 0;
 		strcpy(temptext, sourcecopy + groupArray2[1].rm_so);
-		ui_set_statusbar(TRUE, "%s", temptext);
+		ui_set_statusbar(TRUE, "wildcard %s", temptext);
+		// currentTVCNumber= sourcecopy + groupArray[1].rm_so;
+	} else if (!retisiliconepre){
+		gchar sourcecopy[strlen(text)+1];
+		strcpy(sourcecopy, text);
+		sourcecopy[groupArray3pre[1].rm_eo] = 0;
+		strcpy(temptext, sourcecopy + groupArray3pre[1].rm_so);
+		temptextpre = g_strconcat(preletter, temptext, NULL);
+		strcpy(temptext, temptextpre);
+		ui_set_statusbar(TRUE, "Silikon %s", temptextpre);
+		reti=1;
+		retiasterix=1;
+		// currentTVCNumber= sourcecopy + groupArray[1].rm_so;
+	} else if (!retipre) {
+		gchar sourcecopy[strlen(text)+1];
+		strcpy(sourcecopy, text);
+		sourcecopy[groupArraypre[1].rm_eo] = 0;
+		strcpy(temptext, sourcecopy + groupArraypre[1].rm_so);
+		temptextpre = g_strconcat(preletter, temptext, NULL);
+		strcpy(temptext, temptextpre);
+		ui_set_statusbar(TRUE, "Gummi %s", temptextpre);
+		// currentTVCNumber= sourcecopy + groupArray[1].rm_so;
+	} else if (!retiasterixpre){
+		gchar sourcecopy[strlen(text)+1];
+		strcpy(sourcecopy, text);
+		sourcecopy[groupArray2pre[1].rm_eo] = 0;
+		strcpy(temptext, sourcecopy + groupArray2pre[1].rm_so);
+		temptextpre = g_strconcat(preletter, temptext, NULL);
+		strcpy(temptext, temptextpre);
+		ui_set_statusbar(TRUE, "wildcard %s", temptextpre);
 		// currentTVCNumber= sourcecopy + groupArray[1].rm_so;
 	} 
 
-	if(!reti){
+	if(!reti||!retipre){
 		material = "Gummi/";
-	}else if(!retisilicone){
+	}else if(!retisilicone||!retisiliconepre){
 		material = "Silikon/";
 	}
-	
-	//ui_set_statusbar(TRUE, "after");
-	// couppath
-	coupling_folder = "/home/tvc/Kupplungen/coups";
+
+    coupling_folder = "/home/tvc/Kupplungen/coups";
 	coupling_prefix = "cn";
-	printf("%s",g_strconcat(coupling_folder,couppath,coupusage,material));
-	fflush(stdout);
-	if(!reti||!retisilicone){
+		
+	const gchar *wholepath = g_strconcat(coupling_folder,couppath,coupusage,material,NULL);
+
+	if(!reti||!retisilicone||!retipre||!retisiliconepre){
 		DIR *d;
 		struct dirent *dir;
-		d = opendir(g_strconcat(coupling_folder,couppath,coupusage,material));
+		d = opendir(g_strconcat(coupling_folder,couppath,coupusage,material,NULL));
 		if (d) {
 			while ((dir = readdir(d)) != NULL) {
 				if (strcmp(dir->d_name, g_strconcat(coupling_prefix, temptext, ".dat", NULL)) == 0 ){
 					//printf("%s\n", dir->d_name);
 					ui_set_statusbar(TRUE, "%s", dir->d_name);
-					// printf("%s\n",current_dir);
-					cp(g_strconcat(addressbar_last_address, "/", dir->d_name, NULL), g_strconcat(coupling_folder,couppath,coupusage,material, dir->d_name, NULL) );
+					
+					cp(g_strconcat(addressbar_last_address, "/", dir->d_name, NULL), g_strconcat(wholepath, dir->d_name, NULL) );
 				}
 			}
 			closedir(d);
 		}
-	} else if(!retiasterix){
+	}
+	else if(!retiasterix||!retiasterixpre){
 		DIR *d;
 		struct dirent *dir;
-		d = opendir(g_strconcat(coupling_folder,couppath,coupusage,material));
+		d = opendir(g_strconcat(coupling_folder,couppath,coupusage,material,NULL));
 		if (d) {
 			while ((dir = readdir(d)) != NULL) {
 				retiasterix = 1;
@@ -2890,7 +2937,7 @@ static void ui_CoupEntry_activate(GtkEntry *coupentry, gpointer user_data)
 				retiasterix = regexec(&regexasterixone, dir->d_name, 0, 0, 0);
 				if(!retiasterix){
 					ui_set_statusbar(TRUE, "%d %s", retiasterix, dir->d_name);
-					cp(g_strconcat(addressbar_last_address, "/", dir->d_name, NULL), g_strconcat(coupling_folder,couppath,coupusage,material,dir->d_name, NULL) );
+					cp(g_strconcat(addressbar_last_address, "/", dir->d_name, NULL), g_strconcat(wholepath,dir->d_name, NULL) );
 					ui_set_statusbar(TRUE, "%s", dir->d_name);
 				}
 		
@@ -2898,9 +2945,10 @@ static void ui_CoupEntry_activate(GtkEntry *coupentry, gpointer user_data)
 			closedir(d);
 		}
 	}
-	
+
 	regfree(&regex);
 	regfree(&regexasterix);
+	
 	on_menu_refresh(NULL,NULL);	
 }
 
@@ -2912,28 +2960,40 @@ static void coupfolderchooser(GtkComboBox * combobox, G_GNUC_UNUSED gpointer use
 	switch ( index )
 	{
 		case 0:
-			couppath = "/VULASTIK/L/";
+			couppath = g_strdup("/VULASTIK_L/");
+			preletter = "X";
 			break;
 		case 1:
-			couppath = "/VULASTIK/XT/";
+			couppath = g_strdup("/VULASTIK_XT/");
+			preletter = "Y";
 			break;
 		case 2:
-			couppath = "/VULKARDAN/F/";
+			couppath = g_strdup("/VULKARDAN_F/");
+			preletter = "F";
 			break;
 		case 3:
-			couppath = "/VULKARDAN/E/";
+			couppath = g_strdup("/VULKARDAN_E/");
+			preletter = "K";
 			break;
 		case 4:
-			couppath = "/VULKARDAN/E/";
+			couppath = g_strdup("/MEGIFLEX_B/");
+			preletter = "J";
 			break;
 		case 5:
-			couppath = "/RATO/S/";
+			couppath = g_strdup("/RATO_S/");
+			preletter = "G";
 			break;
 		case 6:
-			couppath = "/RATO/R/";
+			couppath = g_strdup("/RATO_R/");
+			preletter = "G";
 			break;
 		case 7:
-			couppath = "/RATO/DS/";
+			couppath = g_strdup("/RATO_DS/");
+			preletter = "A";
+			break;
+		case 8:
+			couppath = g_strdup("/VULKARDAN_L/");
+			preletter = "K";
 			break;
 		default:
 			printf("default\n");
@@ -2960,14 +3020,15 @@ static void coupusagechooser(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user
 static void fill_combocoup_entry (GtkWidget *combo)
 {
  
-  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Vula L"); //0
-  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Vula XT");
-  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Vulk F");
-  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Vulk E free");
-  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Vulk E bell");
-  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Rato S");
-  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Rato R");
-  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Rato DS");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "VULASTIK L"); //0
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "VULASTIK XT");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "VULKARDAN F");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "VULKARDAN E");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "MEGIFLEX B");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "RATO S/S+");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "RATO R/R+");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "RATO DS/DS+");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "VULKARDAN L");
 }
 
 static void fill_combocoupusage_entry (GtkWidget *combo)
@@ -3047,7 +3108,7 @@ static void make_tvcbar(void)
 	g_signal_connect(wid, "clicked", G_CALLBACK(copynewreport), NULL);
 	gtk_box_pack_start(GTK_BOX(topsub2), wid, FALSE, FALSE, 0);
 
-
+	/* weg damit -> context menu
 	#if GTK_CHECK_VERSION(3, 10, 0)
 		wid = gtk_image_new_from_icon_name("insert-text-symbolic", GTK_ICON_SIZE_MENU);
 		wid = GTK_WIDGET(gtk_tool_button_new(wid, NULL));
@@ -3057,7 +3118,7 @@ static void make_tvcbar(void)
 	gtk_widget_set_tooltip_text(wid, _("Fill report odt"));
 	g_signal_connect(wid, "clicked", G_CALLBACK(finalizereport), NULL);
 	gtk_box_pack_start(GTK_BOX(topsub2), wid, FALSE, FALSE, 0);
-
+	*/
 
 	#if GTK_CHECK_VERSION(3, 10, 0)
 		wid = gtk_image_new_from_icon_name("software-update-available-symbolic", GTK_ICON_SIZE_MENU);
