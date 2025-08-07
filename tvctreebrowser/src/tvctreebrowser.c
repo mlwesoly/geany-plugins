@@ -2995,6 +2995,10 @@ static void coupfolderchooser(GtkComboBox * combobox, G_GNUC_UNUSED gpointer use
 			couppath = g_strdup("/VULKARDAN_L/");
 			preletter = "K";
 			break;
+		case 9:
+			couppath = g_strdup("/VULKARDAN_G/");
+			preletter = "K";
+			break;
 		default:
 			printf("default\n");
 	}
@@ -3019,7 +3023,6 @@ static void coupusagechooser(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user
 
 static void fill_combocoup_entry (GtkWidget *combo)
 {
- 
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "VULASTIK L"); //0
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "VULASTIK XT");
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "VULKARDAN F");
@@ -3029,6 +3032,7 @@ static void fill_combocoup_entry (GtkWidget *combo)
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "RATO R/R+");
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "RATO DS/DS+");
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "VULKARDAN L");
+  gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "VULKARDAN G");
 }
 
 static void fill_combocoupusage_entry (GtkWidget *combo)
