@@ -183,6 +183,10 @@ if ENABLE_XMLSNIPPETS
 SUBDIRS += xmlsnippets
 endif
 
+if ENABLE_TVCTREEBROWSER
+SUBDIRS += tvctreebrowser
+endif
+
 
 # sign release tarballs
 sign:
