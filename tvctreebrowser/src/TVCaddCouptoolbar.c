@@ -19,6 +19,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/sendfile.h>
 
 #include "geany.h"
 #include <geanyplugin.h>
@@ -29,6 +30,8 @@
 #include "tvcaddition.h"
 
 
+#define BUF_SIZE 4096*1000
+
 static gchar *coupling_folder = NULL;
 static gchar *coupling_prefix = NULL;
 static gchar *transfer_folder = NULL;
@@ -36,11 +39,62 @@ static gchar *transfer_folder = NULL;
 static gchar *couppath = NULL;
 
 static gchar *coupusage = NULL;
+static gchar *coupmaterial  = NULL;
 static gchar *preletter = NULL;
 static GtkComboBox * combobox;
 
 GtkWidget *coupbar;
 static GtkWidget *coupentry;
+
+
+
+static void copy_coupling_file(gchar *couplingname, gchar *path)
+{
+	const GeanyDocument *doc = document_get_current();
+
+	if (doc != NULL) {
+		// copys the makereport.sh into the current dir
+		const gchar *locale_path = g_path_get_dirname(doc->file_name);
+		// const gchar *destinationfile = g_strconcat(locale_path,(gchar*)"/",(gchar*)"makereport.sh",NULL);
+		gchar *destinationfile = g_strconcat(locale_path,(gchar*)"/", couplingname, NULL);
+		gchar *sourcefile = g_strconcat(path,(gchar*)"/", couplingname, NULL);
+		ui_set_statusbar(TRUE, "%s", sourcefile);
+		ui_set_statusbar(TRUE, "%s", destinationfile);
+		int pid = fork();
+		if (pid == 0) {
+			// Newly spawned child Process.
+			// int status_code = execvp(command, argument_list);
+			int status_code = 0;
+
+			const char *fromfile = sourcefile;
+			const char *tofile = destinationfile;
+			struct stat stat_buf;
+			int n = 1;
+
+			int fromfd = open(fromfile, O_RDONLY);
+			fstat(fromfd, &stat_buf);
+			int tofd = open(tofile, O_RDWR | O_CREAT, stat_buf.st_mode);
+
+			while (n > 0) {
+				n = sendfile(tofd, fromfd, 0, BUF_SIZE);
+			}
+
+			if (status_code == -1) {
+				printf("Terminated >makereport_copy< Incorrectly\n");
+				return;
+			}
+		}
+		else {
+			// Old Parent process. The C program will come here
+			printf("This line will be printed\n");
+		}
+		waitpid(pid, NULL, 0);
+
+		on_menu_refresh(NULL,NULL);
+	}
+}
+
+
 
 static void ui_CoupEntry_activate()
 {
@@ -135,7 +189,8 @@ static void ui_CoupEntry_activate()
 		material = "Silikon/";
 	}
 
-    coupling_folder = "/home/tvc/Kupplungen/coups";
+    //coupling_folder = "/home/tvc/Kupplungen/coups";
+    coupling_folder = "/home/miki/Kupplungen";
 	coupling_prefix = "cn";
 
 	const gchar *wholepath = g_strconcat(coupling_folder,couppath,coupusage,material,NULL);
@@ -150,7 +205,8 @@ static void ui_CoupEntry_activate()
 					//printf("%s\n", dir->d_name);
 					ui_set_statusbar(TRUE, "%s", dir->d_name);
 
-					cp(g_strconcat(addressbar_last_address, "/", dir->d_name, NULL), g_strconcat(wholepath, dir->d_name, NULL) );
+					copy_coupling_file(dir->d_name,wholepath);
+					//cp(g_strconcat(addressbar_last_address, "/", dir->d_name, NULL), g_strconcat(wholepath, dir->d_name, NULL) );
 				}
 			}
 			closedir(d);
@@ -168,7 +224,9 @@ static void ui_CoupEntry_activate()
 				retiasterix = regexec(&regexasterixone, dir->d_name, 0, 0, 0);
 				if(!retiasterix){
 					ui_set_statusbar(TRUE, "%d %s", retiasterix, dir->d_name);
-					cp(g_strconcat(addressbar_last_address, "/", dir->d_name, NULL), g_strconcat(wholepath,dir->d_name, NULL) );
+
+					copy_coupling_file(dir->d_name,wholepath);
+					//cp(g_strconcat(addressbar_last_address, "/", dir->d_name, NULL), g_strconcat(wholepath,dir->d_name, NULL) );
 					ui_set_statusbar(TRUE, "%s", dir->d_name);
 				}
 
@@ -250,6 +308,28 @@ static void coupusagechooser()
 	}
 }
 
+static void materialchooser()
+{
+	int index = gtk_combo_box_get_active(combobox);
+	switch ( index )
+	{
+		case 0:
+			coupmaterial = "Gummi/";
+			break;
+		case 1:
+			coupmaterial = "Silicone L duty/";
+			break;
+		case 2:
+			coupmaterial = "Silicone M duty/";
+			break;
+		case 3:
+			coupmaterial = "Silicone C duty/";
+			break;
+		default:
+			printf("default\n");
+	}
+}
+
 static void fill_combocoup_entry (GtkWidget *combo)
 {
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "VULASTIK L"); //0
@@ -266,9 +346,16 @@ static void fill_combocoup_entry (GtkWidget *combo)
 
 static void fill_combocoupusage_entry (GtkWidget *combo)
 {
-
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Marine"); //0
   gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Industrie");
+}
+
+static void fill_material_entry (GtkWidget *combo)
+{
+	gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Rubber"); //0
+	gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Silicon L duty");
+	gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Silicon M duty");
+	gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Silicon C duty");
 }
 
 void make_coupbar(void)
@@ -284,12 +371,17 @@ void make_coupbar(void)
 	GtkWidget *choosecouptype = gtk_combo_box_text_new();
     fill_combocoup_entry (choosecouptype);
 	g_signal_connect(choosecouptype, "changed", G_CALLBACK(coupfolderchooser), NULL);
-	gtk_combo_box_set_active(GTK_COMBO_BOX(choosecouptype),0);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(choosecouptype),9);
 
 	GtkWidget *chooseusagetype = gtk_combo_box_text_new();
     fill_combocoupusage_entry (chooseusagetype);
 	g_signal_connect(chooseusagetype, "changed", G_CALLBACK(coupusagechooser), NULL);
 	gtk_combo_box_set_active(GTK_COMBO_BOX(chooseusagetype),0);
+
+	GtkWidget *materialtype = gtk_combo_box_text_new();
+	fill_material_entry (materialtype);
+	g_signal_connect(materialtype, "changed", G_CALLBACK(materialchooser), NULL);
+	gtk_combo_box_set_active(GTK_COMBO_BOX(materialtype),0);
 
 	gtk_box_pack_start(GTK_BOX(combocoupbox), choosecouptype, TRUE, TRUE, 0);
 	gtk_box_pack_start(GTK_BOX(combocoupbox), chooseusagetype, TRUE, FALSE, 0);
@@ -297,12 +389,12 @@ void make_coupbar(void)
 	coupentry = gtk_entry_new();
 	gtk_entry_set_placeholder_text( GTK_ENTRY(coupentry),"X3012, F5014, ... ");
 
-
 	g_signal_connect(coupentry, "activate", G_CALLBACK(ui_CoupEntry_activate), NULL);
 
 	gtk_box_pack_start(GTK_BOX(coupbar), label, FALSE, FALSE, 0);
 	gtk_box_pack_start(GTK_BOX(coupbar), coupentry, TRUE, TRUE, 0);
 	gtk_box_pack_start(GTK_BOX(coupbar), combocoupbox, TRUE, TRUE, 0);
+	gtk_box_pack_start(GTK_BOX(coupbar), materialtype, TRUE, TRUE, 0);
 
 	// //g_signal_connect(filter_combo, "changed", G_CALLBACK(ui_combo_box_changed), NULL);
 
