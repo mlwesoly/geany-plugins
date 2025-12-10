@@ -381,31 +381,31 @@ static gboolean
 check_hidden(const gchar *filename)
 {
 	gsize len;
-	const gchar *base_name = NULL;
+	gchar *base_name = NULL;
 	base_name = g_path_get_basename(filename);
 
 	if (EMPTY(base_name))
 	{
-		g_free((gchar*)base_name);
+		g_free(base_name);
 		return FALSE;
 	}
 
 	if (CONFIG_SHOW_HIDDEN_FILES)
 	{
-		g_free((gchar*)base_name);
+		g_free(base_name);
 		return FALSE;
 	}
 
 #ifdef G_OS_WIN32
 	if (win32_check_hidden(filename))
 	{
-		g_free((gchar*)base_name);
+		g_free(base_name);
 		return TRUE;
 	}
 #else
 	if (base_name[0] == '.')
 	{
-		g_free((gchar*)base_name);
+		g_free(base_name);
 		return TRUE;
 	}
 #endif
@@ -413,11 +413,11 @@ check_hidden(const gchar *filename)
 	len = strlen(base_name);
 	if (base_name[len - 1] == '~')
 	{
-		g_free((gchar*)base_name);
+		g_free(base_name);
 		return TRUE;
 	}
 
-	g_free((gchar*)base_name);
+	g_free(base_name);
 	return FALSE;
 }
 
@@ -2815,7 +2815,6 @@ plugin_init(GeanyData *data)
 
 	load_settings();
 	create_sidebar();
-
 	tvctreebrowser_chroot(get_default_dir());
 
 	/* setup keybindings */
@@ -2835,8 +2834,6 @@ plugin_init(GeanyData *data)
 		0, 0, "rename_refresh", _("Refresh"), NULL);
 	keybindings_set_item(key_group, KB_TRACK_CURRENT, kb_activate,
 		0, 0, "track_current", _("Track Current"), NULL);
-
-
 
 	plugin_signal_connect(geany_plugin, NULL, "document-activate", TRUE,
 		(GCallback)&treebrowser_track_current_cb, NULL);
