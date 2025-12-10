@@ -79,6 +79,7 @@ static void copy_coupling_file(gchar *couplingname, gchar *couplingdestname, gch
 				printf("Terminated >copy_coupling_file< Incorrectly\n");
 				return;
 			}
+			return(0);
 		}
 		else {
 			// Old Parent process. The C program will come here
@@ -182,8 +183,8 @@ static void ui_CoupEntry_activate()
 	}
 
 
-    //coupling_folder = g_strdup("/home/tvc/Kupplungen/coups");
-    coupling_folder = g_strdup("/home/miki/Kupplungen");
+    coupling_folder = g_strdup("/home/tvc/Kupplungen/coups");
+    //coupling_folder = g_strdup("/home/miki/Kupplungen");
 	coupling_prefix = g_strdup("cn");
 
 	gchar *wholepath = g_strconcat(coupling_folder, couppath, coupusage, coupmaterial, NULL);

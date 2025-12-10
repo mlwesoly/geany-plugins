@@ -207,6 +207,7 @@ static void copy_new_project_template()
 			printf("Terminated Incorrectly\n");
 			return;
 		}
+		return;
 	}
 	else {
 		// Old Parent process. The C program will come here
@@ -240,6 +241,7 @@ static void update_current_shell(void)
 				printf("Terminated Incorrectly\n");
 				return;
 			}
+			return;
 		}
 		else {
 			// Old Parent process. The C program will come here
@@ -283,6 +285,7 @@ static void makereport_copy(void)
 				printf("Terminated >makereport_copy< Incorrectly\n");
 				return;
 			}
+			return;
 		}
 		else {
 			// Old Parent process. The C program will come here
@@ -354,6 +357,11 @@ static void copynewreport(void)
 				g_printf("%s",n);
 				fflush(stdout);
 			}
+
+
+
+
+			return;
 			// const char* command = "python3";
 
 			// Newly spawned child Process.

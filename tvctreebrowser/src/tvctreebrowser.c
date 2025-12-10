@@ -22,8 +22,7 @@
 #include <math.h>
 #include <gtk/gtk.h>
 
-#include <regex.h>
-#include <dirent.h>
+// #include <dirent.h>
 #include <glob.h>
 #include <unistd.h>
 #include <errno.h>
@@ -173,7 +172,7 @@ static gboolean save_settings(void);
 static void on_menu_fillreport(GtkMenuItem *menuitem, gpointer *user_data);
 static void on_menu_executescript(GtkMenuItem *menuitem, gpointer *user_data);
 static void on_menu_getfilename();
-static void on_menu_executetvc(GtkMenuItem *menuitem, gpointer *user_data);
+// static void on_menu_executetvc(GtkMenuItem *menuitem, gpointer *user_data);
 
 /* ------------------
  * PLUGIN CALLBACKS
@@ -2067,6 +2066,9 @@ create_view_and_model(void)
 	gtk_tree_view_set_model(GTK_TREE_VIEW(view), GTK_TREE_MODEL(treestore));
 	g_signal_connect(G_OBJECT(render_text), "edited", G_CALLBACK(on_treeview_renamed), view);
 
+	// gtk_scrollable_set_hscroll_policy (GtkScrollable* view,GtkScrollablePolicy policy);
+
+
 	return view;
 }
 
@@ -2107,7 +2109,7 @@ create_sidebar(void)
 	scrollwin 				= gtk_scrolled_window_new(NULL, NULL);
 
 	gtk_entry_set_placeholder_text( GTK_ENTRY(filter),"File filter");
-	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollwin), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+	gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrollwin), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
 	
 	TVCnumberFolderChange();
 	//char * getenv (const char *name)
@@ -2295,6 +2297,7 @@ static void finalizereport(void)
             printf("Terminated Incorrectly\n");
             return;
         }
+		return;
     }
     else {
         // Old Parent process. The C program will come here
@@ -2424,6 +2427,7 @@ static void on_menu_fillreport(GtkMenuItem *menuitem, gpointer *user_data)
 			printf("Terminated Incorrectly\n");
 			return;
 		}
+		return;
 	}
 	else {
 		// Old Parent process. The C program will come here
