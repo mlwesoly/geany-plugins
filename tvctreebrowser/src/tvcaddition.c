@@ -25,20 +25,18 @@
 #include <sys/stat.h>
 #include <sys/sendfile.h>
 
-
 #include "geany.h"
 #include <geanyplugin.h>
 
 #include "tvcaddition.h"
 #include "tvctreebrowser.h"
 
-#define BUF_SIZE 4096*1000
 
 static GtkWidget *tvcexpander;
 static GtkWidget *TVCNumbertoolbar;
 static GtkWidget *TVCnumberEntry;
 static gchar *currentTVCNumber = NULL;
-static gchar TVCnumbercurrentFile[12] = {'\0'};
+static gchar *TVCnumbercurrentFile = NULL;
 static gchar *templatetype = NULL;
 
 static gchar *reporttype = NULL;
@@ -51,119 +49,78 @@ static void ui_textEntry_activate(GtkEntry *TVCNumberentry)
 	const gchar *string = gtk_entry_get_text(GTK_ENTRY(TVCnumberEntry));
 	const gchar *destinationfolder;
 
-	regex = g_regex_new (".*([0-9]{2}_[0-9]{2}_[0-9]\.[0-9]{3}).*", G_REGEX_DEFAULT, G_REGEX_MATCH_DEFAULT, NULL);
+	regex = g_regex_new ("([0-9]{2}_[0-9]{2}_[0-9][.][0-9]{3})", G_REGEX_DEFAULT, G_REGEX_MATCH_DEFAULT, NULL);
+
+	g_regex_match (regex, string, 0, &match_info);
+
+	if (g_match_info_matches (match_info)) // while
+	{
+		gchar *word = g_match_info_fetch (match_info, 1);
+		// destinationfolder = g_strconcat("/home/miki/TVC.DATA/", word, NULL);
+		destinationfolder = g_strconcat("/home/tvc/TVC.DATA/", word, NULL);
+		tvctreebrowser_chroot(g_strdup(destinationfolder));
+		g_free (word);
+		// g_match_info_next (match_info, NULL);
+		g_free(destinationfolder);
+	}
+	g_match_info_free (match_info);
+	g_regex_unref (regex);
+}
+
+static void ui_textEntry_changed(GtkEntry *TVCNumberentry)
+{
+	// im moment unbenutzte funktion, glaube ich ^^
+	GRegex *regex;
+	GMatchInfo *match_info;
+	const gchar *string = gtk_entry_get_text(GTK_ENTRY(TVCnumberEntry));
+
+	regex = g_regex_new ("([0-9]{2}_[0-9]{2}_[0-9][.][0-9]{3})", G_REGEX_DEFAULT, G_REGEX_MATCH_DEFAULT, NULL);
 
 	g_regex_match (regex, string, 0, &match_info);
 	if (g_match_info_matches (match_info)) // while
 	{
-		gchar *word = g_match_info_fetch (match_info, 0);
-
-		destinationfolder = g_strconcat("/home/miki/TVC.DATA/", word, NULL);
-		// destinationfolder = g_strconcat("/home/tvc/TVC.DATA/", word, NULL);
-		tvctreebrowser_chroot(g_strdup(destinationfolder));
-		g_free (word);
-		g_match_info_next (match_info, NULL);
+		// gchar *word = g_match_info_fetch (match_info, 0);
+		currentTVCNumber = g_match_info_fetch (match_info, 0);
+		// g_free (word);
 	}
 	g_match_info_free (match_info);
 	g_regex_unref (regex);
 }
 
 
-
-static void ui_textEntry_changed(GtkEntry *TVCnumberEntry)
+static gboolean TVCnumberofCurrentFile(gchar *locale_path)
 {
-	gchar *text;
-	char temptext[15]; // 24_24_2.009
-	regex_t regex;
-	int reti;
-	size_t maxGroups = 3;
-	regmatch_t groupArray[maxGroups];
-	reti = regcomp(&regex, ".*([0-9]{2}_[0-9]{2}_[0-9]\.[0-9]{3}).*", REG_EXTENDED);
+	GRegex *regex;
+	GMatchInfo *match_info;
 
-	text = gtk_entry_get_text(GTK_ENTRY(TVCnumberEntry));
+	regex = g_regex_new ("([0-9]{2}_[0-9]{2}_[0-9][.][0-9]{3})", G_REGEX_DEFAULT, G_REGEX_MATCH_DEFAULT, NULL);
 
-	reti = regexec(&regex, text, maxGroups, groupArray, 0);
-	if (!reti) {
-		char sourcecopy[strlen(text)+1];
-		strcpy(sourcecopy, text);
-		sourcecopy[groupArray[1].rm_eo] = 0;
-		strcpy(temptext, sourcecopy + groupArray[1].rm_so);
-		//ui_set_statusbar(TRUE, "Nummer eingegeben: %s", temptext);
-		currentTVCNumber= sourcecopy + groupArray[1].rm_so;
+	g_regex_match (regex, locale_path, 0, &match_info);
+	if (g_match_info_matches (match_info)) // while
+	{
+		gchar *word = g_match_info_fetch (match_info, 0);
+		//g_strlcpy(TVCnumbercurrentFile, word, 11);
+		TVCnumbercurrentFile = g_match_info_fetch (match_info, 0);
+		ui_set_statusbar(TRUE, "Nummer eingegeben: %s", TVCnumbercurrentFile);
+		g_free (word);
+		g_match_info_free (match_info);
+		g_regex_unref (regex);
+		return(TRUE);
+	}else
+	{
+		g_match_info_free (match_info);
+		g_regex_unref (regex);
+		return(FALSE);
 	}
-
-	regfree(&regex);
-}
-
-static void TVCnumberofCurrentFile(gchar *locale_path)
-{
-	gchar *text;
-	char temptext[100]; // 24_24_2.009
-	regex_t regex;
-	int reti;
-	size_t maxGroups = 3;
-	regmatch_t groupArray[maxGroups];
-	reti = regcomp(&regex, ".*([0-9]{2}_[0-9]{2}_[0-9].[0-9]{3}).*", REG_EXTENDED);
-
-	text = locale_path;
-
-	reti = regexec(&regex, text, maxGroups, groupArray, 0);
-	if (!reti) {
-		char sourcecopy[strlen(text)+1];
-		strcpy(sourcecopy, text);
-		sourcecopy[groupArray[1].rm_eo] = 0;
-		strcpy(temptext, sourcecopy + groupArray[1].rm_so);
-		ui_set_statusbar(TRUE, "Nummer eingegeben: %s", temptext);
-		g_strlcpy(TVCnumbercurrentFile, temptext, 12);
-		// TVCnumbercurrentFile = temptext;
-	}
-
-	regfree(&regex);
 }
 
 
-void TVCnumberFolderChange(){
-
-	const GtkWidget *wid;
-
-	TVCNumbertoolbar = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
-	gtk_toolbar_set_icon_size(GTK_TOOLBAR(TVCNumbertoolbar), GTK_ICON_SIZE_MENU);
-	gtk_toolbar_set_style(GTK_TOOLBAR(TVCNumbertoolbar), GTK_TOOLBAR_ICONS);
-
-	#if GTK_CHECK_VERSION(3, 10, 0)
-	wid = gtk_image_new_from_icon_name("go-up", GTK_ICON_SIZE_SMALL_TOOLBAR);
-	wid = GTK_WIDGET(gtk_tool_button_new(wid, NULL));
-	#else
-	wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_GO_UP));
-	#endif
-	// gtk_widget_set_tooltip_text(wid, _("Go up"));
-	//g_signal_connect(wid, "clicked", G_CALLBACK(on_button_go_up), NULL);
-
-	TVCnumberEntry = gtk_entry_new();
-	gtk_entry_set_max_length(GTK_ENTRY(TVCnumberEntry), 11);
-	gtk_entry_set_placeholder_text( GTK_ENTRY(TVCnumberEntry),"TVC Number AA_BB_C.XYZ");
-
-	g_signal_connect(TVCnumberEntry, "changed", G_CALLBACK(ui_textEntry_changed), NULL);
-	g_signal_connect(TVCnumberEntry, "activate", G_CALLBACK(ui_textEntry_activate), NULL);
-
-	gtk_box_pack_start(GTK_BOX(TVCNumbertoolbar), TVCnumberEntry, TRUE, TRUE, 0);
-}
-
-// END adding the textbox for TVC Number entry to change to folder fast
-
-
-// two unused function from earlier
 static void set_template_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user_data)
 {
 	gint index;
-	// get the value from
-
 	index = gtk_combo_box_get_active(combobox);
-	//printf("%d",gtk_combo_box_get_active(combobox));
 	switch ( index )
 	{
-		// declarations
-		// . . .
 		case 0:
 			templatetype = g_strdup("EP");
 			break;
@@ -179,11 +136,14 @@ static void set_template_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer us
 		default:
 			printf("default\n");
 	}
-	fflush(stdout);
 }
+
 
 static void copy_new_project_template()
 {
+	GError *error = NULL;
+	GPid child_pid;
+
 	gchar *locale_path;
 	gchar *locale_filename;
 	GeanyDocument *doc = document_get_current();
@@ -192,43 +152,29 @@ static void copy_new_project_template()
 		locale_path = g_path_get_dirname(doc->file_name);
 		locale_filename = doc->file_name;
 	}
-	//printf("%s",locale_path);
-	//execlp("python", "python", "/home/michael/my_script.py", "test", (char*) NULL);
+
 	char* command = "python3";
 	char* argument_list[] = {"python3", "/home/tvc/tools/python/copy_project_template.py", (char*) addressbar_last_address, (char*)templatetype, NULL};
 
-	//char* command = "/home/tvc/PycharmProjects/PrepareReport/main.py";
-	//char* argument_list[] = {"/home/tvc/PycharmProjects/makereport/main.py", current_dir, NULL};
-	//printf("%s", locale_filename);
+	// Spawn
+	g_spawn_async(NULL, argument_list, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, &child_pid, &error); //G_SPAWN_SEARCH_PATH
 
-	// execl(command, argument_list);
-	execv(command, argument_list);
-	/*
-	 *    int pid = fork();
-	 *    if (pid == 0) {
-	 *        // Newly spawned child Process.
-	 *        int status_code = execvp(command, argument_list);
-	 *
-	 *        if (status_code == -1) {
-	 *            printf("Terminated Incorrectly\n");
-	 *            return;
-}
-return;
-}
-else {
-	// Old Parent process. The C program will come here
-	printf("This line will be printed\n");
-}
-waitpid(pid, NULL, 0);
-*/
+	if (error != NULL) {
+		g_error("Failed to spawn: %s", error->message);
+		ui_set_statusbar(TRUE, "Failed to copy : %s", error->message);
+		g_error_free(error);
+	}
+	g_spawn_close_pid(child_pid);
+
 	on_menu_refresh(NULL,NULL);
 }
 
 //
-
 static void update_current_shell(void)
 {
-	const GeanyDocument *doc = document_get_current();
+	GError *error = NULL;
+	GPid child_pid;
+	GeanyDocument *doc = document_get_current();
 	if (doc != NULL)
 	{
 		gchar *locale_path = g_path_get_dirname(doc->file_name);
@@ -238,72 +184,74 @@ static void update_current_shell(void)
 		gchar *command = "/bin/bash";
 		gchar *argument_list[] = {"/bin/bash", "/home/tvc/tools/shell/update_tvc_script", file_basename, locale_filename,(char *) NULL}; //"/bin/bash",
 
-		// execl(command, argument_list);
-		execv(command, argument_list);
+		// Spawn
+		g_spawn_async(NULL, argument_list, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, &child_pid, &error); //G_SPAWN_SEARCH_PATH
 
-		/*
-		 *        const gint pid = fork();
-		 *        if (pid == 0) {
-		 *            int status_code = execv(command, argument_list);
-		 *
-		 *            if (status_code == -1) {
-		 *                printf("Terminated Incorrectly\n");
-		 *                return;
+		if (error != NULL) {
+			g_error("Failed to spawn: %s", error->message);
+			ui_set_statusbar(TRUE, "Failed to copy : %s", error->message);
+			g_error_free(error);
+		}
+		g_spawn_close_pid(child_pid);
 	}
-	return;
-	}
-	else {
-		printf("This line will be printed, when the forking didn't work\n");
-	}
-	waitpid(pid, NULL, 0);
-	*/
-		on_menu_refresh(NULL,NULL);
-	}
+
 }
+
 
 static void makereport_copy(void)
 {
 	const GeanyDocument *doc = document_get_current();
+	gchar *locale_path = g_path_get_dirname(doc->file_name);
 
-	if (doc != NULL) {
-		// copys the makereport.sh into the current dir
-		const gchar *locale_path = g_path_get_dirname(doc->file_name);
-		const gchar *destinationfile = g_strconcat(locale_path,(gchar*)"/",(gchar*)"makereport.sh",NULL);
+	g_autoptr (GFile) source, destination;
+	char *source_path, *destination_path;
+	g_autoptr (GError) error = NULL;
+	gboolean success;
 
-		//int pid = fork();
-		//if (pid == 0) {
-		// Newly spawned child Process.
-		// int status_code = execvp(command, argument_list);
-		//  int status_code = 0;
+	if (locale_path != NULL)
+	{
+		source_path = "/home/tvc/tools/extra/makereport.sh";
+		destination_path = g_strconcat(locale_path,(gchar*)"/",(gchar*)"makereport.sh",NULL);
 
-		const char *fromfile = "/home/tvc/tools/extra/makereport.sh";
-		const char *tofile = destinationfile;
-		struct stat stat_buf;
-		int n = 1;
+		source = g_file_new_for_path (source_path);
+		destination = g_file_new_for_path (destination_path);
 
-		int fromfd = open(fromfile, O_RDONLY);
-		fstat(fromfd, &stat_buf);
-		int tofd = open(tofile, O_RDWR | O_CREAT, stat_buf.st_mode);
+		success = g_file_copy (source, destination, G_FILE_COPY_BACKUP, NULL, NULL, NULL, &error);
 
-		while (n > 0) {
-			n = sendfile(tofd, fromfd, 0, BUF_SIZE);
+		if (!success) {
+			g_warning ("Failed to copy '%s' to '%s': %s",
+					   source_path,
+			  destination_path,
+			  error->message);
+			ui_set_statusbar(TRUE, "Failed to copy : %s", error->message);
 		}
 
-		//  if (status_code == -1) {
-		//      printf("Terminated >makereport_copy< Incorrectly\n");
-		//      return;
-		//  }
-		return;
-		//}
-		//else {
-		// Old Parent process. The C program will come here
-		//  printf("This line will be printed\n");
-		//}
-		//waitpid(pid, NULL, 0);
+	}else{
+		gboolean test = TVCnumberofCurrentFile(addressbar_last_address);
+		if (test == TRUE )
+		{
+			source_path = "/home/tvc/tools/extra/makereport.sh";
+			destination_path = g_strconcat(addressbar_last_address,(gchar*)"/",(gchar*)"makereport.sh",NULL);
 
-		on_menu_refresh(NULL,NULL);
+			source = g_file_new_for_path (source_path);
+			destination = g_file_new_for_path (destination_path);
+
+			success = g_file_copy (source, destination, G_FILE_COPY_BACKUP, NULL, NULL, NULL, &error);
+
+			if (!success) {
+				g_warning ("Failed to copy '%s' to '%s': %s",
+						   source_path,
+			   destination_path,
+			   error->message);
+				ui_set_statusbar(TRUE, "Failed to copy %s", error->message);
+			}
+		}
+
 	}
+	on_menu_refresh(NULL,NULL);
+
 }
+
 
 static void set_report_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user_data)
 {
@@ -320,9 +268,11 @@ static void set_report_style(GtkComboBox * combobox, G_GNUC_UNUSED gpointer user
 			reporttype = g_strdup("EMP");
 			break;
 		default:
+			reporttype = g_strdup("EP");
 			printf("default\n");
 	}
 }
+
 
 static void copynewreport(void)
 {
@@ -332,7 +282,7 @@ static void copynewreport(void)
 	if (locale_path != NULL) {
 		// regex current TVC number out of path string
 		TVCnumberofCurrentFile(locale_path);
-		if (!(*TVCnumbercurrentFile == '\0'))
+		if (TVCnumbercurrentFile != NULL )
 		{
 			g_autoptr (GFile) source, destination;
 			char *source_path, *destination_path;
@@ -356,11 +306,50 @@ static void copynewreport(void)
 						   source_path,
 			   destination_path,
 			   error->message);
+				ui_set_statusbar(TRUE, "Failed to copy : %s", error->message);
+				g_error_free(error);
 			}
 			on_menu_refresh(NULL,NULL);
 		}
+		else
+		{
+			ui_set_statusbar(TRUE, "couldn't find a TVC number");
+		}
 	}
 }
+
+
+void TVCnumberFolderChange()
+{
+
+	// const GtkWidget *wid;
+
+	TVCNumbertoolbar = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+	gtk_toolbar_set_icon_size(GTK_TOOLBAR(TVCNumbertoolbar), GTK_ICON_SIZE_MENU);
+	gtk_toolbar_set_style(GTK_TOOLBAR(TVCNumbertoolbar), GTK_TOOLBAR_ICONS);
+
+
+	/* #if GTK_CHECK_VERSION(3, 10, 0)
+	 *    wid = gtk_image_new_from_icon_name("go-up", GTK_ICON_SIZE_SMALL_TOOLBAR);
+	 *    wid = GTK_WIDGET(gtk_tool_button_new(wid, NULL));
+	 *    #else
+	 *    wid = GTK_WIDGET(gtk_tool_button_new_from_stock(GTK_STOCK_GO_UP));
+	 *    #endif
+	 */
+	//gtk_widget_set_tooltip_text(wid, _("Go up"));
+	//g_signal_connect(wid, "clicked", G_CALLBACK(on_button_go_up), NULL);
+
+
+	TVCnumberEntry = gtk_entry_new();
+	//gtk_entry_set_max_length(GTK_ENTRY(TVCnumberEntry), 11);
+	gtk_entry_set_placeholder_text( GTK_ENTRY(TVCnumberEntry),"TVC Number AA_BB_C.XYZ");
+
+	g_signal_connect(TVCnumberEntry, "changed", G_CALLBACK(ui_textEntry_changed), NULL);
+	g_signal_connect(TVCnumberEntry, "activate", G_CALLBACK(ui_textEntry_activate), NULL);
+
+	gtk_box_pack_start(GTK_BOX(TVCNumbertoolbar), TVCnumberEntry, TRUE, TRUE, 0);
+}
+
 
 static void fill_comboreport_entry (GtkWidget *combo)
 {
@@ -368,6 +357,7 @@ static void fill_comboreport_entry (GtkWidget *combo)
 	gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EA");
 	gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "EMP");
 }
+
 
 GtkWidget* make_tvcbar(void)
 {
@@ -447,117 +437,13 @@ GtkWidget* make_tvcbar(void)
 }
 
 
-/*
- * static void open_selected_pdffiles(GList *list, gboolean do_not_focus)
- * {
- *    //GSList *files = NULL;
- *    GList *item;
- *    //GeanyDocument *doc;
- *    GError* err = NULL;
- *    //gchar *fullpath = NULL;
- *    for (item = list; item != NULL; item = g_list_next(item))
- *    {
- *        GtkTreePath *treepath = item->data;
- *        gchar *fname = get_tree_path_filename(treepath);
- *        gchar *fpath = "file://";
- *
- *        //gchar *fullpath = NULL;
- *
- *        gchar *fullpath = malloc(strlen(fpath) + strlen(fname) + 1);
- *        //ui_set_statusbar(TRUE, "%s", fullpath);
- *        //ui_set_statusbar(TRUE, "\n");
- *        strcpy(fullpath,fpath);
- *        strcat(fullpath,fname);
- *
- *        //ui_set_statusbar(TRUE, "%s", fullpath);
- *        //ui_set_statusbar(TRUE, fpath);
- *        gtk_show_uri_on_window(NULL, fullpath, GDK_CURRENT_TIME, &err);
- *        //gtk_show_uri(gdk_screen_get_default(), fname, GDK_CURRENT_TIME, &err);
- *        //files = g_slist_prepend(files, fname);
- *        free(fullpath);
- *    }
- *    //files = g_slist_reverse(files);
- *    //document_open_files(files, FALSE, NULL, NULL);
- *    //doc = document_get_current();
- *    //if (doc != NULL && ! do_not_focus)
- *    //  keybindings_send_command(GEANY_KEY_GROUP_FOCUS, GEANY_KEYS_FOCUS_EDITOR);
- *
- *    //g_slist_foreach(files, (GFunc) g_free, NULL); // free filenames
- *    //g_slist_free(files);
- *
- * }
- */
-
-
-
 
 void add_to_sidebar_addition(GtkWidget *sidebar_vbox_bars){
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox_bars), TVCNumbertoolbar, FALSE, TRUE, 1);
 	gtk_box_pack_start(GTK_BOX(sidebar_vbox_bars), tvcexpander, FALSE, TRUE, 1);
 }
 
-int cp(const char *to, const char *from)
-{
-	int fd_to, fd_from;
-	char buf[4096];
-	ssize_t nread;
-	int saved_errno;
 
-	fd_from = open(from, O_RDONLY);
-	if (fd_from < 0)
-	{
-		return -1;
-	}
-
-	fd_to = open(to, O_WRONLY | O_CREAT | O_EXCL, 0666);
-	if (fd_to < 0)
-	{
-		goto out_error;
-	}
-
-	while (nread = read(fd_from, buf, sizeof buf), nread > 0)
-	{
-		char *out_ptr = buf;
-		ssize_t nwritten;
-
-		do {
-			nwritten = write(fd_to, out_ptr, nread);
-
-			if (nwritten >= 0)
-			{
-				nread -= nwritten;
-				out_ptr += nwritten;
-			}
-			else if (errno != EINTR)
-			{
-				goto out_error;
-			}
-		} while (nread > 0);
-	}
-
-	if (nread == 0)
-	{
-		if (close(fd_to) < 0)
-		{
-			fd_to = -1;
-			goto out_error;
-		}
-		close(fd_from);
-
-		/* Success! */
-		return 0;
-	}
-
-	out_error:
-	saved_errno = errno;
-
-	close(fd_from);
-	if (fd_to >= 0)
-		close(fd_to);
-
-	errno = saved_errno;
-	return -1;
-}
 /*
  * static void ui_CoupEntry_activate(GtkEntry *coupentry, gpointer user_data)
  * {
@@ -752,7 +638,46 @@ int cp(const char *to, const char *from)
  * }
  *
  */
-
+/*
+ * static void open_selected_pdffiles(GList *list, gboolean do_not_focus)
+ * {
+ *    //GSList *files = NULL;
+ *    GList *item;
+ *    //GeanyDocument *doc;
+ *    GError* err = NULL;
+ *    //gchar *fullpath = NULL;
+ *    for (item = list; item != NULL; item = g_list_next(item))
+ *    {
+ *        GtkTreePath *treepath = item->data;
+ *        gchar *fname = get_tree_path_filename(treepath);
+ *        gchar *fpath = "file://";
+ *
+ *        //gchar *fullpath = NULL;
+ *
+ *        gchar *fullpath = malloc(strlen(fpath) + strlen(fname) + 1);
+ *        //ui_set_statusbar(TRUE, "%s", fullpath);
+ *        //ui_set_statusbar(TRUE, "\n");
+ *        strcpy(fullpath,fpath);
+ *        strcat(fullpath,fname);
+ *
+ *        //ui_set_statusbar(TRUE, "%s", fullpath);
+ *        //ui_set_statusbar(TRUE, fpath);
+ *        gtk_show_uri_on_window(NULL, fullpath, GDK_CURRENT_TIME, &err);
+ *        //gtk_show_uri(gdk_screen_get_default(), fname, GDK_CURRENT_TIME, &err);
+ *        //files = g_slist_prepend(files, fname);
+ *        free(fullpath);
+ *    }
+ *    //files = g_slist_reverse(files);
+ *    //document_open_files(files, FALSE, NULL, NULL);
+ *    //doc = document_get_current();
+ *    //if (doc != NULL && ! do_not_focus)
+ *    //  keybindings_send_command(GEANY_KEY_GROUP_FOCUS, GEANY_KEYS_FOCUS_EDITOR);
+ *
+ *    //g_slist_foreach(files, (GFunc) g_free, NULL); // free filenames
+ *    //g_slist_free(files);
+ *
+ * }
+ */
 
 // on_menu_fillreport
 
