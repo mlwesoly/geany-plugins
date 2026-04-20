@@ -29,8 +29,8 @@
 void TVCnumberFolderChange();
 void add_to_sidebar_addition(GtkWidget *sidebar_vbox_bars);
 
-void make_tvcbar(void);
+GtkWidget* make_tvcbar(void);
 
-int cp(const char *to, const char *from);
+// int cp(const char *to, const char *from);
 
 #endif

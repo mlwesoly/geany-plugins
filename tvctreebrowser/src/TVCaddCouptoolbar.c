@@ -79,7 +79,7 @@ static void copy_coupling_file(gchar *couplingname, gchar *couplingdestname, gch
 				printf("Terminated >copy_coupling_file< Incorrectly\n");
 				return;
 			}
-			return(0);
+			//return(0);
 		}
 		else {
 			// Old Parent process. The C program will come here
@@ -360,7 +360,7 @@ static void fill_material_entry (GtkWidget *combo)
 	gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo), "Silicon C duty");
 }
 
-void make_coupbar(void)
+GtkWidget* make_coupbar(void)
 {
 	// GtkWidget *wid, *toolbar, *combocopubox;  delete
 
@@ -393,10 +393,11 @@ void make_coupbar(void)
 	g_signal_connect(coupentry, "activate", G_CALLBACK(ui_CoupEntry_activate), NULL);
 
 	gtk_box_pack_start(GTK_BOX(coupbar), label, FALSE, FALSE, 0);
-	gtk_box_pack_start(GTK_BOX(coupbar), coupentry, TRUE, TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(coupbar), combocoupbox, TRUE, TRUE, 0);
-	gtk_box_pack_start(GTK_BOX(coupbar), materialtype, TRUE, TRUE, 0);
+	// gtk_box_pack_start(GTK_BOX(coupbar), coupentry, TRUE, TRUE, 0);
+	// gtk_box_pack_start(GTK_BOX(coupbar), combocoupbox, TRUE, TRUE, 0);
+	// gtk_box_pack_start(GTK_BOX(coupbar), materialtype, TRUE, TRUE, 0);
 
 	// //g_signal_connect(filter_combo, "changed", G_CALLBACK(ui_combo_box_changed), NULL);
 
+	return(coupbar);
 }
